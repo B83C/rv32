@@ -1,11 +1,11 @@
 module vga(
-  input clk,
+  input pclk,
   output hsync, vsync,
   output [3:0] r,g,b
 );
 
-  wire pclk;
-  clk_108 c108 (.clk_in1(clk), .clk_out1(pclk), .reset(0), .locked(0));
+  // wire pclk;
+  // clk_108 c108 (.clk_in1(clk), .clk_out1(pclk), .reset(0), .locked(0));
   wire [$clog2(1280):0] x;
   wire [$clog2(1024):0] y;
   wire active;
