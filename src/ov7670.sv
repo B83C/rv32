@@ -65,7 +65,7 @@ always_ff @(posedge clk) begin
       end
     end
     CHECK_ACK: begin
-      if(im.ind == 0) begin
+      if(ack[1] && im.ind == 0) begin
         case(dstate) 
           WRITE_DEV_ADDR: begin
             im.rw_stop <= 0;
