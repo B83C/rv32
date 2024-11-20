@@ -1,5 +1,7 @@
 source init.tcl 
 
+read_verilog -sv -quiet [glob -nocomplain src/*.svh]
+set_property IS_GLOBAL_INCLUDE 1 [get_files src/defs.svh]
 read_verilog -sv -quiet [glob -nocomplain src/*.sv]
 read_verilog -quiet [glob -nocomplain src/*.v]
 # read_verilog -quiet [glob -nocomplain src/ips/*.v]
@@ -11,7 +13,7 @@ set opt_checkpoint "$outputDir/post_opt.dcp"
 set place_checkpoint "$outputDir/post_place.dcp"
 set route_checkpoint "$outputDir/post_route.dcp"
 
-set source_files [concat [glob -nocomplain src/*.sv] [glob -nocomplain src/*.v] [glob -nocomplain src/*.vhdl] [glob src/xdc/*.xdc] [glob src/ips/*/*.xci]]
+set source_files [concat [glob -nocomplain src/*.sv] [glob -nocomplain src/*.svh] [glob -nocomplain src/*.v] [glob -nocomplain src/*.vhdl] [glob src/xdc/*.xdc] [glob src/ips/*/*.xci]]
 
 proc files_changed {files checkpoints} {
     foreach file $files {
@@ -40,8 +42,8 @@ foreach folder [glob -nocomplain src/ips/*] {
 
 	# read_verilog -quiet [glob -nocomplain $folder/*.v]
 	# if {![files_changed $xcis $checkpoint]} {
-    read_checkpoint -incremental $checkpoint
-		# read_ip -quiet $xcis
+    # read_checkpoint -incremental $checkpoint
+		read_ip -quiet $xcis
 	    # write_checkpoint -force $checkpoint
 	# } else {
 	# 	read_ip -quiet $xcis
@@ -88,10 +90,10 @@ if {![files_changed $source_files $place_checkpoint]} {
 }
 
 # Check for timing violations
-# if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
-#     puts "Found setup timing violations => running physical optimization."
-#     phys_opt_design
-# }
+if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+    puts "Found setup timing violations => running physical optimization."
+    phys_opt_design
+}
 
 # Read route checkpoint or perform routing if none exists
 if {![files_changed $source_files $route_checkpoint]} {
