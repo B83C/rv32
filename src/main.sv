@@ -50,7 +50,6 @@ module main #(
     localparam D_OFF_Y = 20;
     localparam C_W = 8;
     localparam C_H = 8;
-    localparam STR_LEN = 5;
     localparam SCALE = 4;
 
     localparam HCC = 1280/(C_W * SCALE);
@@ -58,12 +57,16 @@ module main #(
 
     logic [$clog2(SCALE) - 1:0] scale_cntr_x = 0, scale_cntr_y = 0;
 
-    logic [7 - 1:0] text_buffer [1280/(C_W*SCALE)][1080/(C_H*SCALE)];
+    logic [7 - 1:0] text_buffer [1280/(C_W*SCALE) - 1: 0][1080/(C_H*SCALE) - 1: 0];
 
     logic [$clog2(C_W) - 1: 0] x_cntr;
     logic [$clog2(C_H) - 1: 0] y_cntr;
+    logic [$clog2(HCC) - 1: 0] c_x;
+    logic [$clog2(VCC) - 1: 0] c_y;
     logic [$clog2(128)- 1:0] character_addr;
     wire [C_W*C_H - 1: 0] char_buf;
+    wire char_pix [C_H - 1 : 0][C_W - 1 : 0];
+    assign char_pix = {>>{char_buf}};
     rom #(.WIDTH(C_W*C_H), .DEPTH(128), .binaryFile("ascii.rom"), .RISING_EDGE(0)) ascii (.addr(character_addr), .data(char_buf), .clk(clk_108));
 
 
@@ -94,22 +97,37 @@ module main #(
         if (active) begin
             scale_cntr_x <= scale_cntr_x + 1;
             if(scale_cntr_x == SCALE - 1) begin
+                scale_cntr_x <= 0;
                 x_cntr <= x_cntr + 1;
-                if(x_cntr == C_H - 1) begin
-                    scale_cntr_y <= scale_cntr_y + 1;
+                if(x_cntr == C_W - 1) begin
                     x_cntr <= 0;
-                    if(scale_cntr_y == SCALE - 1) begin
-                        y_cntr <= y_cntr + 1;
-                        if(y_cntr == C_H - 1) begin
-                            y_cntr <= 0;
+                    c_x <= c_x + 1;
+                    if (c_x == HCC - 1) begin
+                        c_x <= 0;
+                        scale_cntr_y <= scale_cntr_y + 1;
+                        if(scale_cntr_y == SCALE - 1) begin
+                            scale_cntr_y <= 0;
+                            y_cntr <= y_cntr + 1;
+                            if(y_cntr == C_H - 1) begin
+                                y_cntr <= 0;
+                                c_y <= c_y + 1;
+                                if (c_y == HCC - 1) begin
+                                    c_y <= 0;
+                                    character_addr <= text_buffer[c_x][0];
+                                end else begin
+                                    character_addr <= text_buffer[c_x][c_y + 1];
+                                end
+                            end
+                        end else begin
+                            character_addr <= text_buffer[0][c_y];
                         end
+                    end else begin
+                        character_addr <= text_buffer[c_x + 1][c_y];
                     end
-                    character_addr <= { >> {display_chars[0+:7]}};
-                end else begin
-                    character_addr <= text_buffer[j][];
-                end
+                end 
             end
-            {r,g,b} <= {12{char_buf[(y_cntr * C_W) + (x_cntr % C_W)]}};
+            {r,g,b} <= {12{char_pix[y_cntr][x_cntr]}};
+            // {r,g,b} <= {12{char_buf[(y_cntr * C_W) + (x_cntr % C_W)]}};
         end else begin
         	
         end
@@ -193,6 +211,11 @@ module main #(
     initial begin
         counter = 0;
         start_cam = 1;
+        text_buffer[20][1] = "h";
+        text_buffer[20][2] = "e";
+        text_buffer[20][3] = "l";
+        text_buffer[20][4] = "l";
+        text_buffer[20][5] = "o";
         // display_chars[0] = "h";
         // display_chars[1] = "e";
         // display_chars[2] = "l";
