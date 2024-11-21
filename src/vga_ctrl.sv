@@ -11,8 +11,8 @@ module vga_ctrl#(
 )
 (
   input pclk,
-  output [$clog2(HSYNC):0] x,
-  output [$clog2(VSYNC):0] y,
+  output [$clog2(HDISP) - 1:0] x,
+  output [$clog2(VDISP) - 1:0] y,
   output reg hsync, vsync,
   output active
 );
@@ -25,8 +25,8 @@ logic [vcntr_bits:0] vcntr;
 logic hactive, vactive;
 
 assign active = hactive & vactive;
-assign x = hcntr;
-assign y = vcntr;
+assign x = $clog2(HDISP)'(hcntr);
+assign y = $clog2(VDISP)'(vcntr);
 
 always @(posedge pclk) begin
   if (hcntr == HSYNC - 1) begin

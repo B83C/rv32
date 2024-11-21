@@ -36,14 +36,17 @@ if {![file exists $outputDir]} {
 
 # Read IP cores
 foreach folder [glob -nocomplain src/ips/*] {
-	set checkpoint [lindex [glob $folder/*.dcp] 0]
+	set checkpoint [glob -nocomplain $folder/*.dcp]
 	set xcis [glob -nocomplain $folder/*.xci]
 	set ip [file tail $folder]
 
-	# read_verilog -quiet [glob -nocomplain $folder/*.v]
+	if {[llength $xcis]} {
+	    set xci [lindex $xcis 0]
+	    read_ip -quiet $xci
+	} 	
+    # read_verilog -quiet [glob -nocomplain $folder/*.v]
 	# if {![files_changed $xcis $checkpoint]} {
     # read_checkpoint -incremental $checkpoint
-		read_ip -quiet $xcis
 	    # write_checkpoint -force $checkpoint
 	# } else {
 	# 	read_ip -quiet $xcis
@@ -64,6 +67,26 @@ if {![files_changed $source_files $synth_checkpoint]} {
     synth_design -top main -part $partNum -incremental_mode quick
     write_checkpoint -force $synth_checkpoint
 }
+
+# set first_arg [lindex $argv 0]
+# put $first_arg
+# if { $first_arg eq "debug"} {
+#     create_debug_core u_ila_0 ila 
+#     set_property C_DATA_DEPTH 1024 [get_debug_cores u_ila_0]
+#     set_property C_TRIGIN_EN false [get_debug_cores u_ila_0]
+#     set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
+#     set_property C_ADV_TRIGGER false [get_debug_cores u_ila_0]
+#     set_property C_INPUT_PIPE_STAGES 0 [get_debug_cores u_ila_0]
+#     set_property C_EN_STRG_QUAL false [get_debug_cores u_ila_0]
+#     set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
+#     set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]}
+
+#     set_property port_width 1 [get_debug_ports u_ila_0/clk]
+#     connect_debug_port u_ila_0/clk [get_nets [list clk ]]
+#     set_property port_width 1 [get_debug_ports u_ila_0/probe0]
+#     connect_debug_port u_ila_0/probe0 [get_nets [list A_or_B]]
+#     create_debug_port u_ila_0 probe
+# }
 # read_checkpoint $synth_checkpoint
 # link_design
 # synth_design -top main -part $partNum -incremental_mode quick

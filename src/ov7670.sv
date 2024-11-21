@@ -50,7 +50,7 @@ localparam command_cnt = 77;
 logic [$clog2(command_cnt) - 1:0] command_ind = 0;
 
 logic [15:0] command_buffer;
-rom #(.WIDTH(16), .DEPTH(command_cnt), .binaryFile("ov7670_buffer.rom")) buffer_rom (.addr(command_ind), .data(command_buffer));
+rom #(.WIDTH(16), .DEPTH(command_cnt), .binaryFile("ov7670_buffer.rom")) buffer_rom (.addr(command_ind), .data(command_buffer), .clk(clk));
 
 always_ff @(posedge clk) begin
   im.start <= 0;

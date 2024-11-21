@@ -1,11 +1,12 @@
 vivado := "/home/b83c/tools/Xilinx/Vivado/2024.1/bin/vivado"
+testbench := "tb1"
 
 sim:
     mkdir -p sim
     @echo "Compiling Verilog file..."
-    cd sim; verilator --binary -j 16  --build tb.sv --trace -I../src/ -I../src/tb/ --timing
+    cd sim; verilator --binary -j 16  --build {{testbench}}.sv --trace -I../src/ -I../src/tb/ --timing
     @echo "Running simulation..."
-    cd sim; ./obj_dir/Vtb
+    cd sim; ./obj_dir/V{{testbench}}
     @echo "Simulation complete. Run 'just wave' to view the waveform."
 
 wave: sim
