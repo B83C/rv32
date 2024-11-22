@@ -50,19 +50,22 @@ module main #(
     localparam D_OFF_Y = 20;
     localparam C_W = 8;
     localparam C_H = 8;
-    localparam SCALE = 4;
+    localparam SCALE_X = 2;
+    localparam SCALE_Y = 2;
 
-    localparam HCC = 1280/(C_W * SCALE);
-    localparam VCC = 1080/(C_H * SCALE);
+    localparam int HCC = 1280 / (C_W * SCALE_X);
+    localparam int VCC = 1024 / (C_H * SCALE_Y);
+    localparam int x_bound = HCC * C_W * SCALE_X;
+    localparam int y_bound = VCC * C_H * SCALE_Y;
 
     logic [$clog2(SCALE) - 1:0] scale_cntr_x = 0, scale_cntr_y = 0;
 
-    logic [7 - 1:0] text_buffer [1280/(C_W*SCALE) - 1: 0][1080/(C_H*SCALE) - 1: 0];
+    logic [7:0] text_buffer [1024/(C_H*SCALE_Y) - 1: 0][1280/(C_W*SCALE_X) - 1: 0];
 
-    logic [$clog2(C_W) - 1: 0] x_cntr;
-    logic [$clog2(C_H) - 1: 0] y_cntr;
-    logic [$clog2(HCC) - 1: 0] c_x;
-    logic [$clog2(VCC) - 1: 0] c_y;
+    logic [$clog2(C_W) - 1: 0] x_cntr = 0;
+    logic [$clog2(C_H) - 1: 0] y_cntr = 0;
+    logic [$clog2(HCC) - 1: 0] c_x = 0;
+    logic [$clog2(VCC) - 1: 0] c_y = 0;
     logic [$clog2(128)- 1:0] character_addr;
     wire [C_W*C_H - 1: 0] char_buf;
     wire char_pix [C_H - 1 : 0][C_W - 1 : 0];
@@ -79,7 +82,7 @@ module main #(
     logic clkb /* synthesis syn_isclock = 1 */;
     logic enb;
     logic [16:0]addrb = 0;
-    wire [11:0]doutb;
+    logic [11:0]doutb;
 
     buffer_mem bm (.clka(clk_25), .ena(ena), .wea(wea), .addra(addra), .dina(dina), .clkb(clk_108), .enb(enb), .addrb(addrb), .doutb(doutb));
 
@@ -93,68 +96,58 @@ module main #(
     assign clkb = clk_108;
 
     always @(posedge clk_108) begin
-        // character_addr <= 7'd38;
+        {r,g,b} = 12'b0;
         if (active) begin
-            scale_cntr_x <= scale_cntr_x + 1;
-            if(scale_cntr_x == SCALE - 1) begin
-                scale_cntr_x <= 0;
-                x_cntr <= x_cntr + 1;
-                if(x_cntr == C_W - 1) begin
-                    x_cntr <= 0;
-                    c_x <= c_x + 1;
-                    if (c_x == HCC - 1) begin
-                        c_x <= 0;
-                        scale_cntr_y <= scale_cntr_y + 1;
-                        if(scale_cntr_y == SCALE - 1) begin
-                            scale_cntr_y <= 0;
-                            y_cntr <= y_cntr + 1;
-                            if(y_cntr == C_H - 1) begin
-                                y_cntr <= 0;
-                                c_y <= c_y + 1;
-                                if (c_y == HCC - 1) begin
-                                    c_y <= 0;
-                                    character_addr <= text_buffer[c_x][0];
-                                end else begin
-                                    character_addr <= text_buffer[c_x][c_y + 1];
+            if(x < x_bound && y < y_bound) begin
+                scale_cntr_x <= scale_cntr_x + 1;
+                if(scale_cntr_x == SCALE_X - 1) begin
+                    scale_cntr_x <= 0;
+                    x_cntr <= x_cntr + 1;
+                    if(x_cntr == C_W - 1) begin
+                        x_cntr <= 0;
+                        c_x <= c_x + 1;
+                        if (c_x == HCC - 1) begin
+                            c_x <= 0;
+                            scale_cntr_y <= scale_cntr_y + 1;
+                            if(scale_cntr_y == SCALE_Y - 1) begin
+                                scale_cntr_y <= 0;
+                                y_cntr <= y_cntr + 1;
+                                if(y_cntr == C_H - 1) begin
+                                    y_cntr <= 0;
+                                    c_y <= c_y + 1;
+                                    if (c_y == VCC - 1) begin
+                                        c_y <= 0;
+                                        character_addr <= text_buffer[0][0];
+                                    end else begin
+                                        character_addr <= text_buffer[c_y + 1][0];
+                                    end
                                 end
+                            end else begin
+                                character_addr <= text_buffer[c_y][0];
                             end
                         end else begin
-                            character_addr <= text_buffer[0][c_y];
+                            character_addr <= text_buffer[c_y][c_x + 1];
                         end
-                    end else begin
-                        character_addr <= text_buffer[c_x + 1][c_y];
-                    end
-                end 
-            end
-            {r,g,b} <= {12{char_pix[y_cntr][x_cntr]}};
-            // {r,g,b} <= {12{char_buf[(y_cntr * C_W) + (x_cntr % C_W)]}};
-        end else begin
-        	
-        end
-        if(active && x < 640 && y < 480) begin
-            if (x[1:0] == 2'b11) begin
-                addrb <= addrb + 1;
-            end
-            {r,g,b} = doutb;
-        end else if (x >= D_OFF_X && x < (D_OFF_X + STR_LEN * C_W * SCALE)) begin
-            if (y >= D_OFF_Y && y < (D_OFF_Y + C_H * SCALE)) begin
-                {r,g,b} <= {12{char_buf[(y_cntr * C_W) + (x_cntr % C_W)]}};
-            end
-        end else begin
-            if (y >= 480) begin
+                    end 
+                end
+                {r,g,b} <= {12{char_pix[y_cntr][x_cntr]}};
+            end             
+            if (x < 640 && y < 480) begin
+                if (x[1:0] == 2'b11) begin
+                    addrb <= addrb + 1;
+                end
+                {r,g,b} <= doutb;
+            end else if(y >= 480) begin
                 addrb <= 0;
             end
-            scale_cntr_x <= 0;
-            scale_cntr_x <= 0;
-            {r,g,b} = 12'b0;
-        end
+        end        
     end
 
     assign JC[5] = clk_25;
     wire camera_state cam_state;
 
     wire pclk;
-    IBUFG ibuf_inst (
+    IBUF ibuf_inst (
         .I(JC[1]),
         .O(pclk)
     );
@@ -211,16 +204,7 @@ module main #(
     initial begin
         counter = 0;
         start_cam = 1;
-        text_buffer[20][1] = "h";
-        text_buffer[20][2] = "e";
-        text_buffer[20][3] = "l";
-        text_buffer[20][4] = "l";
-        text_buffer[20][5] = "o";
-        // display_chars[0] = "h";
-        // display_chars[1] = "e";
-        // display_chars[2] = "l";
-        // display_chars[3] = "l";
-        // display_chars[4] = "o";
+        text_buffer[1][40+:5] = { <<8{""}};
     end
     // assign JC = {1'b0, 1'b0, hsync, vsync};
 endmodule
