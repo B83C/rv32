@@ -1,4 +1,5 @@
 // %include ips/c
+`include "defs.svh"
 
 `timescale 1ns/1ps
 module main #(
@@ -8,13 +9,15 @@ module main #(
     input [7:0] JB,
     output reg [3:0] r, g, b,
     inout reg [7:0] JC,
+    output reg [1:0] servo,
     input [4:0] btn,
     output reg [7:0] led,
     // output [7:4] JC,
     output reg hsync, vsync
 );
     wire clk_108, clk_25, clk_100;
-    reg start_cam, capture = 1;
+    command_t cmd = '{send : 0, default:0};
+    reg reset_cam_n = 1, capture = 1;
 
     logic [31:0] clk_cnt;
     
@@ -28,13 +31,55 @@ module main #(
         end
     endgenerate
 
+    logic [$clog2(2048) - 1:0] pwm_cntr;
+    logic [$clog2(256) - 1:0] div_cntr;
+    logic [$clog2(256) - 1:0] servo_deg [1:0];
+
+    always @(posedge clk_25) begin
+        div_cntr <= div_cntr + 1;
+        if (div_cntr == 250 - 1) begin
+            div_cntr <= 0;
+            pwm_cntr <= pwm_cntr + 1;
+            if (pwm_cntr == 2000 - 1) begin
+                pwm_cntr <= 0;
+            end
+        end
+    end
+
+    generate
+        for(i = 0; i < 2; i++) begin
+            pwm_servo m0 (.clk(clk_25), .en(1), .cntr(pwm_cntr), .deg(servo_deg[i]), .signal(servo[i]));
+        end
+    endgenerate
+
+    byte test = 0;
+    logic ss = 0, nss = 0;
     always @(posedge clk) begin
         clk_cnt <= clk_cnt + 1;
+        cmd.send <= 0;
+        ss <= nss;
+        if (!ss && nss) begin
+            cmd.command <= {8'h00, test};
+            test <= test + 1;
+            cmd.send <= 1;
+        end
     end
 
     always @(posedge div_clk) begin
+        nss <= 0;
         if(buttons[0]) begin
             capture <= ~capture;
+        end 
+        if(buttons[1]) begin
+            nss <= 1;
+        end
+        if(btn[2]) begin
+            servo_deg[0] <= servo_deg[0] + 1;
+            servo_deg[1] <= servo_deg[1] + 1;
+        end
+        if(btn[3]) begin
+            servo_deg[0] <= servo_deg[0] - 1;
+            servo_deg[1] <= servo_deg[1] - 1;
         end
     end
 
@@ -58,7 +103,8 @@ module main #(
     localparam int x_bound = HCC * C_W * SCALE_X;
     localparam int y_bound = VCC * C_H * SCALE_Y;
 
-    logic [$clog2(SCALE) - 1:0] scale_cntr_x = 0, scale_cntr_y = 0;
+    logic [$clog2(SCALE_X) - 1:0] scale_cntr_x = 0;
+    logic [$clog2(SCALE_Y) - 1:0] scale_cntr_y = 0;
 
     logic [7:0] text_buffer [1024/(C_H*SCALE_Y) - 1: 0][1280/(C_W*SCALE_X) - 1: 0];
 
@@ -96,7 +142,7 @@ module main #(
     assign clkb = clk_108;
 
     always @(posedge clk_108) begin
-        {r,g,b} = 12'b0;
+        {r,g,b} <= 12'b0;
         if (active) begin
             if(x < x_bound && y < y_bound) begin
                 scale_cntr_x <= scale_cntr_x + 1;
@@ -143,16 +189,31 @@ module main #(
         end        
     end
 
-    assign JC[5] = clk_25;
     wire camera_state cam_state;
+    wire pclk, href, vref;
+    assign href = JC[2];
+    assign vref = JC[6];
 
-    wire pclk;
+    wire [7:0] D;
+
+    genvar acc;
+
+    generate 
+        for(acc = 0; acc < 8; acc++) begin
+            if (acc >= 4) begin
+                assign D[2 * acc - 7] = JB[acc];
+            end else begin
+                assign D[acc * 2] = JB[acc];
+            end
+        end
+    endgenerate
+
     IBUF ibuf_inst (
         .I(JC[1]),
         .O(pclk)
     );
-    ov7670 cam (.clk(clk_100), .plk(pclk), .D(JB), .vsync(JC[0]), .hsync(JC[2]), .sda(JC[3]), .scl(JC[4]), .xclk(JC[5]), .pwdn(JC[6]), .rst(JC[7]), .start(start_cam), .sys_state(cam_state));
 
+    ov7670_ctrl cam (.clk(clk_100), .clk_25(clk_25), .sda(JC[3]), .scl(JC[7]), .xclk(JC[5]), .pwdn(JC[0]), .rst(JC[4]), .sys_state(cam_state), .cmd(cmd), .reset_n(reset_cam_n));
 
     typedef enum {
         WAIT_FRAME_START,
@@ -170,23 +231,23 @@ module main #(
         case(state)
             WAIT_FRAME_START: begin
                 if(capture) begin
-                    state <= (!JC[0]) ? ROW_CAPTURE: WAIT_FRAME_START;
+                    state <= (!vref) ? ROW_CAPTURE: WAIT_FRAME_START;
                     addra <= 0;
                     pixel_half <= 0;
                 end
             end
             ROW_CAPTURE: begin
-                state <= (!JC[0]) ? ROW_CAPTURE: WAIT_FRAME_START;
-                if(JC[2]) begin
+                state <= (!vref) ? ROW_CAPTURE: WAIT_FRAME_START;
+                if(href) begin
                     pixel_half <= ~pixel_half;
                     if (!pixel_half) begin
-                        dina[11:4] <= JB;
+                        dina[11:4] <= D;
                         counter <= counter + 1;
                         if(counter == 2'b11) begin
                             addra <= addra + 1;
                         end
                     end else begin
-                        dina[3:0] <= JB[7:4];
+                        dina[3:0] <= D[7:4];
                         wea <= 1;
                     end
                 end else begin
@@ -194,17 +255,14 @@ module main #(
                 end
             end
             STOP: begin
-                if(btn[0]) begin
-                    state <= WAIT_FRAME_START;
-                end
             end
         endcase
     end
 
     initial begin
         counter = 0;
-        start_cam = 1;
-        text_buffer[1][40+:5] = { <<8{""}};
+        text_buffer[1][41+:5] = { <<8{"hello"}};
+        text_buffer[2][41+:6] = { <<8{"Servo:"}};
     end
     // assign JC = {1'b0, 1'b0, hsync, vsync};
 endmodule
