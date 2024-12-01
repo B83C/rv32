@@ -1,5 +1,5 @@
 vivado := "/home/b83c/tools/Xilinx/Vivado/2024.1/bin/vivado"
-testbench := "tb1"
+testbench := "ir_dec"
 
 sim:
     mkdir -p sim
