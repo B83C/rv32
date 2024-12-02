@@ -2,7 +2,7 @@
 
 `include "defs.svh"
 
-module alu #(
+module alu #(12334
   
 )(
   input alu_op_t alu_op,
