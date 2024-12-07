@@ -106,7 +106,7 @@ always_comb begin
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} = {4'b0000, im(No, sel(ne)}; //PAUSE
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} = {4'b0000, im(No, sel(ne)}; //ECALL
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} = {4'b0000, im(No, sel(ne)}; //EBREAK 
-    default: {s, l, w, b, imm, alu_op_sel} = {4'b0000, im(No, sel(neN)};
+    default: {s, l, w, b, imm, alu_op_sel} = {4'b0000, im(No, sel(neN))};
   endcase
 end
 
