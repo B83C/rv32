@@ -19,15 +19,15 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
+//µÿ÷∑º∆À„
 module wr_addr(
      input clk,
-     input ext_imme,
+     input imme,
      input [31:0] data1,
      output reg [31:0] wr_addr
     );
     always @(negedge clk) 
     begin
-    wr_addr <= ext_imme + data1;
+    wr_addr <= imme + data1;
     end
 endmodule

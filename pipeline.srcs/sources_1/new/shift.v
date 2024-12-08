@@ -18,7 +18,7 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
+//移位寄存，取出数据
 module shift #(parameter M = 3, N = 32)(
 	input clk,
 	input [N-1:0]data,

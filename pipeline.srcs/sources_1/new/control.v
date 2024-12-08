@@ -27,17 +27,17 @@ module control(
 	input func,
 	input pass,
 	input cancel,
-	output reg sub_en,
-	output reg wr_en,
-	output reg jmp_en,
-	output reg lb_en,
-	output reg sb_en,
+	output reg sub_en,//减使能
+	output reg wr_en,//寄存器写使能
+	output reg jmp_en,//跳转指令使能
+	output reg lb_en,//单字节存储器读指令
+	output reg sb_en,//单字节寄存器写指令
 	output reg lh_en,
 	output reg sh_en,
 	output reg lw_en,
 	output reg sw_en
 );
-
+//时钟下降沿进行读写操作
 	always@(negedge clk)begin
 		if(cancel)begin
 			sw_en <= 1'b0; lw_en <= 1'b0;sh_en<=1'b0;lh_en<=1'b0;sb_en<=1'b0;lb_en<=1'b0; jmp_en <= 1'b0;sub_en<=1'b0;  wr_en <= 1'b0;
