@@ -29,12 +29,8 @@ module datapath_1 (
     output [31:0] addr,
     output [31:0] wr_addr_s,
     output [31:0] data2_s,
-    output lw_en_s,
-    output sw_en_s,
-    output lh_en_s,
-    output sh_en_s,
-    output lb_en_s,
-    output sb_en_s
+    // data_width dw,
+    output control_signals_t cs_o
 );
   //第一级
   wire cancel;
@@ -63,7 +59,9 @@ module datapath_1 (
   wire [6:0] opcode;
 
   wire s, l, w, j, b, wb_src, sub;
-  assign {s, l, w, j, b, wb_src, sub} = cs;
+  wire data_width dw;
+  assign {s, l, w, j, b, wb_src, sub, dw} = cs;
+  assign cs_o = cs;  //TODO make it stored in register
 
   ir_dec_ctrl layer2 (.clk(clk), .ir(instr), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .func7(func7), .alu_src_sel(alu_src_sel), .jmp_addr(jmp_addr), .opcode(opcode));
 
@@ -331,7 +329,7 @@ module datapath_1 (
       .clk(clk),
       .data_out(wr_data_r),
       .addr(data_mem),
-      .sel(lw_en_s | lh_en_s | lb_en_s),
+      .sel(cs.l),
       .wr_data(data)
   );  //数据选择
 

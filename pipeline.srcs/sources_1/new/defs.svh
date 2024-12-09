@@ -3,15 +3,6 @@
 
 `define IR_WIDTH 32
 
-typedef struct packed {
-  logic s;
-  logic l;
-  logic w;
-  logic j;
-  logic b;
-  logic wb_src;
-  logic sub;
-} control_signals_t;
 
 typedef struct packed {
   logic [1:0] alu_src_sel; //
@@ -42,5 +33,22 @@ typedef enum {
   J,
   None
 } instr_type;
+
+typedef enum logic[1:0] {
+  DW = 0,
+  DH,
+  DB
+} data_width ;
+
+typedef struct packed {
+  logic s;
+  logic l;
+  logic w;
+  logic j;
+  logic b;
+  logic wb_src;
+  logic sub;
+  logic [1:0] dw; //TODO
+} control_signals_t;
 
 `endif

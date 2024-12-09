@@ -54,7 +54,7 @@ assign rd = ir[11:7];
 
 assign jmp_addr = { {12{ir[31]}}, ir[31], ir[19:12], ir[20], ir[30:21] };  //jal立即数扩展输出
 
-function logic[33:0] im_sel (instr_type t); 
+function logic[33:0] T(instr_type t); 
   case (t) 
     R: return {2'b00, 32'b0};
     I: return {2'b10, {{20{ir[31]}}, ir[31:20]}}; 
@@ -95,50 +95,51 @@ assign imm = d_res.alu_info.immediate;
 assign alu_src_sel = d_res.alu_info.alu_src_sel;
 
 always @(posedge clk) begin
+  d_res <= '{'{default:0}, T(None)};
   casez ({func7, func3, opcode}) 
-    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1, default: 0}, im_sel(U)}; //LUI
-    {7'd?, 3'd?, 7'b0010111}:  d_res <= '{'{w:1,default:0}, im_sel(U)}; //AUIPC
-    {7'd?, 3'd?, 7'b1101111}:  d_res <= '{'{w:1,j:1,default:0}, im_sel(J)}; //JAL
-    {7'd?, 3'd?, 7'b1100111}:  d_res <= '{'{w:1,j:1,default:0}, im_sel(I)}; //JALR
-    {7'd?, 3'd0, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BEQ
-    {7'd?, 3'd1, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BNE
-    {7'd?, 3'd4, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BLT
-    {7'd?, 3'd5, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BGE
-    {7'd?, 3'd6, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BLTU
-    {7'd?, 3'd7, 7'b1100011}:  d_res <= '{'{b:1,default:0}, im_sel(B)}; //BGEU
-    {7'd?, 3'd0, 7'b0000011}:  d_res <= '{'{l:1,w:1,wb_src:1,default:0}, im_sel(I)}; //LB
-    {7'd?, 3'd1, 7'b0000011}:  d_res <= '{'{l:1,w:1,wb_src:1,default:0}, im_sel(I)}; //LH
-    {7'd?, 3'd2, 7'b0000011}:  d_res <= '{'{l:1,w:1,wb_src:1,default:0}, im_sel(I)}; //LW
-    {7'd?, 3'd4, 7'b0000011}:  d_res <= '{'{l:1,w:1,wb_src:1,default:0}, im_sel(I)}; //LBU
-    {7'd?, 3'd5, 7'b0000011}:  d_res <= '{'{l:1,w:1,wb_src:1,default:0}, im_sel(I)}; //LHU
-    {7'd?, 3'd0, 7'b0100011}:  d_res <= '{'{s:1,default:0}, im_sel(S)}; //SB
-    {7'd?, 3'd1, 7'b0100011}:  d_res <= '{'{s:1,default:0}, im_sel(S)}; //SH
-    {7'd?, 3'd2, 7'b0100011}:  d_res <= '{'{s:1,default:0}, im_sel(S)}; //SW
-    {7'd?, 3'd0, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //ADDI
-    {7'd?, 3'd2, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //SLTI
-    {7'd?, 3'd3, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //SLTIU
-    {7'd?, 3'd4, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //XORI
-    {7'd?, 3'd6, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //ORI
-    {7'd?, 3'd7, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //ANDI
-    {7'd?, 3'd1, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //SLLI
-    {7'd0, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //SRLI 
-    {7'b0100000, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, im_sel(I)}; //SRAI
-    {7'd0, 3'd0, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //ADD
-    {7'b0100000, 3'd0, 7'b0110011}:  d_res <= '{'{w:1, sub:1 ,default:0}, im_sel(R)}; //SUB
-    {7'd0, 3'd1, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //SLL
-    {7'd0, 3'd2, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //SLT
-    {7'd0, 3'd3, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //SLTU
-    {7'd0, 3'd4, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //XOR
-    {7'd0, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //SRL
-    {7'b0100000, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //SRA
-    {7'd0, 3'd6, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //OR
-    {7'd0, 3'd7, 7'b0110011}:  d_res <= '{'{w:1,default:0}, im_sel(R)}; //AND
+    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1, default: 0}, T(U)}; //LUI
+    {7'd?, 3'd?, 7'b0010111}:  d_res <= '{'{w:1,default:0}, T(U)}; //AUIPC
+    {7'd?, 3'd?, 7'b1101111}:  d_res <= '{'{w:1,j:1,default:0}, T(J)}; //JAL
+    {7'd?, 3'd?, 7'b1100111}:  d_res <= '{'{w:1,j:1,default:0}, T(I)}; //JALR
+    {7'd?, 3'd0, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BEQ
+    {7'd?, 3'd1, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BNE
+    {7'd?, 3'd4, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLT
+    {7'd?, 3'd5, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGE
+    {7'd?, 3'd6, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLTU
+    {7'd?, 3'd7, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGEU
+    {7'd?, 3'd0, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DB,wb_src:1,default:0}, T(I)}; //LB
+    {7'd?, 3'd1, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DH,wb_src:1,default:0}, T(I)}; //LH
+    {7'd?, 3'd2, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DW,wb_src:1,default:0}, T(I)}; //LW
+    {7'd?, 3'd4, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DB,wb_src:1,default:0}, T(I)}; //LBU
+    {7'd?, 3'd5, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DH,wb_src:1,default:0}, T(I)}; //LHU
+    {7'd?, 3'd0, 7'b0100011}:  d_res <= '{'{s:1,dw:DB,default:0}, T(S)}; //SB
+    {7'd?, 3'd1, 7'b0100011}:  d_res <= '{'{s:1,dw:DH,default:0}, T(S)}; //SH
+    {7'd?, 3'd2, 7'b0100011}:  d_res <= '{'{s:1,dw:DW,default:0}, T(S)}; //SW
+    {7'd?, 3'd0, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ADDI
+    {7'd?, 3'd2, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTI
+    {7'd?, 3'd3, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTIU
+    {7'd?, 3'd4, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //XORI
+    {7'd?, 3'd6, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ORI
+    {7'd?, 3'd7, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ANDI
+    {7'd?, 3'd1, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLLI
+    {7'd0, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRLI 
+    {7'b0100000, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRAI
+    {7'd0, 3'd0, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //ADD
+    {7'b0100000, 3'd0, 7'b0110011}:  d_res <= '{'{w:1, sub:1 ,default:0}, T(R)}; //SUB
+    {7'd0, 3'd1, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLL
+    {7'd0, 3'd2, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLT
+    {7'd0, 3'd3, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLTU
+    {7'd0, 3'd4, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //XOR
+    {7'd0, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRL
+    {7'b0100000, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRA
+    {7'd0, 3'd6, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //OR
+    {7'd0, 3'd7, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //AND
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //FENCE
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)};  //FENCE.TSO
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //PAUSE
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //ECALL
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //EBREAK 
-    default: d_res <= '{'{default:0}, im_sel(None)};
+    default: d_res <= '{'{default:0}, T(None)};
   endcase
 end
 
