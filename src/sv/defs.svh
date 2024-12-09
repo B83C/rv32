@@ -1,5 +1,8 @@
 `ifndef DEFS_SVH 
 `define DEFS_SVH
+
+parameter IR_WIDTH = 32;
+
 typedef enum {
   ADD = 0,
   SUB,
