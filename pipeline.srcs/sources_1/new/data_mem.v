@@ -20,74 +20,66 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 //Êı¾İ´æ´¢Æ÷
-module data_mem(
+module data_mem (
     input clk,
-	input [31:0]addr,
-	input [31:0]data2,
-	input lw_en,
-	input sw_en,
-	input lh_en,
-	input sh_en,
-	input lb_en,
-	input sb_en,
-	output reg [31:0]data_mem
+    input [31:0] addr,
+    input [31:0] data2,
+    input lw_en,
+    input sw_en,
+    input lh_en,
+    input sh_en,
+    input lb_en,
+    input sb_en,
+    output reg [31:0] data_mem
 );
 
-	reg [7:0]data[0:255];
-	//ÉÏÉıÑØĞ´Èë
-	always@(posedge clk)
-	begin
-		if(lw_en)begin
-			data_mem[7:0] <= data[addr+3];
-			data_mem[15:8] <= data[addr+2];
-			data_mem[23:16] <= data[addr+1];
-			data_mem[31:24] <= data[addr];
-		end
-		else if(lh_en) begin
-		    data_mem[7:0] <= data[addr+3];
-			data_mem[15:8] <= data[addr+2];
-			data_mem[23:16] <= 8'b0;
-			data_mem[31:24] <= 8'b0;
-		end
-		else if(lb_en) begin
-	        data_mem[7:0] <= data[addr+3];
-			data_mem[15:8] <=  8'b0;
-			data_mem[23:16] <= 8'b0;
-			data_mem[31:24] <= 8'b0;
-		end
-		else begin
-		    data_mem[7:0] <=   8'b0;
-			data_mem[15:8] <=  8'b0;
-			data_mem[23:16] <= 8'b0;
-			data_mem[31:24] <= 8'b0;
-			end
-			end
-    //ÏÂ½µÑØ¶ÁÈ¡
-	always@(negedge clk)
-	begin
-		if(sw_en)begin
-			data[addr+3] <= data2[7:0];
-			data[addr+2] <= data2[15:8];
-			data[addr+1] <= data2[23:16];
-			data[addr] <= data2[31:24];
-		end
-		else if(sh_en) begin
-		    data[addr+3] <= data2[7:0];
-			data[addr+2] <= data2[15:8];
-			data[addr+1] <= 8'b0;
-			data[addr] <= 8'b0;
-		end
-		else if(sb_en) begin
-		    data[addr+3] <= data2[7:0];
-			data[addr+2] <= 8'b0;
-			data[addr+1] <= 8'b0;
-			data[addr] <= 8'b0;
-		 end
-		 else begin
-		    data[addr+3] <=8'b0;
-			data[addr+2] <= 8'b0;
-			data[addr+1] <= 8'b0;
-			data[addr] <= 8'b0;
-        end
-        end
+  reg [7:0] data[0:255];
+  //ÉÏÉıÑØĞ´Èë
+  always @(posedge clk) begin
+    if (lw_en) begin
+      data_mem[7:0]   <= data[addr+3];
+      data_mem[15:8]  <= data[addr+2];
+      data_mem[23:16] <= data[addr+1];
+      data_mem[31:24] <= data[addr];
+    end else if (lh_en) begin
+      data_mem[7:0]   <= data[addr+3];
+      data_mem[15:8]  <= data[addr+2];
+      data_mem[23:16] <= 8'b0;
+      data_mem[31:24] <= 8'b0;
+    end else if (lb_en) begin
+      data_mem[7:0]   <= data[addr+3];
+      data_mem[15:8]  <= 8'b0;
+      data_mem[23:16] <= 8'b0;
+      data_mem[31:24] <= 8'b0;
+    end else begin
+      data_mem[7:0]   <= 8'b0;
+      data_mem[15:8]  <= 8'b0;
+      data_mem[23:16] <= 8'b0;
+      data_mem[31:24] <= 8'b0;
+    end
+  end
+  //ÏÂ½µÑØ¶ÁÈ¡
+  always @(negedge clk) begin
+    if (sw_en) begin
+      data[addr+3] <= data2[7:0];
+      data[addr+2] <= data2[15:8];
+      data[addr+1] <= data2[23:16];
+      data[addr]   <= data2[31:24];
+    end else if (sh_en) begin
+      data[addr+3] <= data2[7:0];
+      data[addr+2] <= data2[15:8];
+      data[addr+1] <= 8'b0;
+      data[addr]   <= 8'b0;
+    end else if (sb_en) begin
+      data[addr+3] <= data2[7:0];
+      data[addr+2] <= 8'b0;
+      data[addr+1] <= 8'b0;
+      data[addr]   <= 8'b0;
+    end else begin
+      data[addr+3] <= 8'b0;
+      data[addr+2] <= 8'b0;
+      data[addr+1] <= 8'b0;
+      data[addr]   <= 8'b0;
+    end
+  end
 endmodule

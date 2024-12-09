@@ -19,19 +19,21 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 //移位寄存，取出数据
-module shift #(parameter M = 3, N = 32)(
-	input clk,
-	input [N-1:0]data,
-	output [N-1:0]data_s
+module shift #(
+    parameter M = 3,
+    N = 32
+) (
+    input clk,
+    input [N-1:0] data,
+    output [N-1:0] data_s
 );
 
-	reg [M*N-1:0]shift;
-	
-	always @(posedge clk) 
-	begin
-	shift <= {shift[(M-1)*N-1:0],data};
-	end
-	
-	assign data_s = shift[M*N-1:(M-1)*N];
+  reg [M*N-1:0] shift;
 
-endmodule 
+  always @(posedge clk) begin
+    shift <= {shift[(M-1)*N-1:0], data};
+  end
+
+  assign data_s = shift[M*N-1:(M-1)*N];
+
+endmodule

@@ -20,13 +20,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 //receive 寄存器，取出输出数据
-module receive #(parameter N = 32)(
+module receive #(
+    parameter N = 32
+) (
     input clk,
-	input [N-1:0]data,
-	output reg [N-1:0]data_r
-    );
-    always@(posedge clk) 
-    begin
+    input [N-1:0] data,
+    output reg [N-1:0] data_r
+);
+  always @(posedge clk) begin
     data_r <= data;
-    end
+  end
 endmodule
