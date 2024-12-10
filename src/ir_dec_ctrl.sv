@@ -66,19 +66,6 @@ function logic[33:0] T(instr_type t);
   endcase
 endfunction
 
-// function logic[1:0] sel(instr_type t); 
-//   case (t) 
-//     R: return 2'b00; 
-//     I: return 2'b10; 
-//     S: return 2'b00; 
-//     B: return 2'b00; 
-//     U: return 2'b11; 
-//     J: return 2'b11; 
-//     default: return 32'b0;
-//   endcase
-// endfunction
-
-
 typedef struct packed {
   control_signals_t control_signals;
   alu_info_t alu_info;
@@ -88,7 +75,6 @@ typedef struct packed {
 result_t d_res; // Decode result
 
 assign cs = d_res.control_signals;
-// assign {s, l, w, j, b, wb_src, sub} = d_res.control_signals;
 
 assign imm = d_res.alu_info.immediate;
 
@@ -97,7 +83,7 @@ assign alu_src_sel = d_res.alu_info.alu_src_sel;
 always @(posedge clk) begin
   d_res <= '{'{default:0}, T(None)};
   casez ({func7, func3, opcode}) 
-    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1,default: 0}, T(U)}; //LUI
+    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1,default:0}, T(U)}; //LUI
     {7'd?, 3'd?, 7'b0010111}:  d_res <= '{'{w:1,default:0}, T(U)}; //AUIPC
     {7'd?, 3'd?, 7'b1101111}:  d_res <= '{'{w:1,j:1,default:0}, T(J)}; //JAL
     {7'd?, 3'd?, 7'b1100111}:  d_res <= '{'{w:1,j:1,default:0}, T(I)}; //JALR
