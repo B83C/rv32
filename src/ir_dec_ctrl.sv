@@ -20,23 +20,9 @@ module ir_dec_ctrl #(
   output [2:0] func3
   // output [6:0] func7
 );
-
-// typedef struct {
-//   logic [31:0] pattern;
-//   logic [31:0] mask;
-//   logic ld, str, w, b;
-//   instr_type it;
-// } instr_t;
-
-// instr_type it
-
-// wire [2:0] func3;
 wire [6:0] func7;
 wire [11:0] func12;
 wire [6:0] opcode;
-
-//Buffered;
-// logic [31:0] ir;
 
 assign func3 = ir[14:12];
 assign func7 = ir[31:25];
@@ -62,7 +48,6 @@ endfunction
 typedef struct packed {
   control_signals_t control_signals;
   alu_info_t alu_info;
-  // logic [5 - 1 :0] control_signals;
 } result_t;
 
 result_t d_res; // Decode result

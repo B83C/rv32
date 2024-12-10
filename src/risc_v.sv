@@ -29,7 +29,7 @@ module risc_v (
   wire [31:0] instr;
   wire [31:0] wr_addr_s;
   wire [31:0] data2_s;
-  wire control_signals_t cs;
+  wire control_signals_t cs_m;
   wire [31:0] data_mem;
 
   instr_register U1 (
@@ -41,16 +41,16 @@ module risc_v (
       .rst_n(rst_n),
       .instr(instr),
       .data_mem(data_mem),
-      .addr(addr),
+      .pc_addr(addr),
       .wr_addr_s(wr_addr_s),
       .data2_s(data2_s),
-      .cs_o(cs)
+      .cs_om(cs_m)
   );
   data_mem U3 (
       .clk(clk),
       .addr(addr),
       .data2(data2_s),
-      .cs(cs),
+      .cs(cs_m),
       .memory(data_mem)
   );
 endmodule

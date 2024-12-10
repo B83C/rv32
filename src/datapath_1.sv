@@ -6,180 +6,105 @@ module datapath_1 (
     input rst_n,
     input [31:0] instr,
     input [31:0] data_mem,
-    output [31:0] addr,
+    output [31:0] pc_addr,
     output [31:0] wr_addr_s,
     output [31:0] data2_s,
     // data_width dw,
-    output control_signals_t cs_o
+    output control_signals_t cs_om
 );
-  //第一级
+
+  wire branch_hit;
   wire [31:0] branch_addr;
-  wire cancel;
-
-  wire [31:0] offset_r;
-  wire [31:0] pc_current; //TODO
+  logic [31:0] pc_current; //TODO
   wire [31:0] pc_next;
+ 
+  wire [31:0] instr_d, pc_d, pc_e, pc_m, pc_w;
+  rbuffer #(32) instr_b (clk, instr, instr_d);
+  rbuffer #(32) pc_bd (clk, pc_current, pc_d);
+  rbuffer #(32) pc_be (clk, pc_d, pc_e);
+  rbuffer #(32) pc_bm (clk, pc_e, pc_m);
+  rbuffer #(32) pc_bw (clk, pc_m, pc_w);
 
-  assign pc_next = (cs.j)? data_out: (branch_hit)? branch_addr: pc_current + 4;
+  wire [4:0] rs1, rs1_e;
+  wire [4:0] rs2, rs2_e;
+  rbuffer #(5) rs1_be (clk, rs1, rs1_e);
+  rbuffer #(5) rs2_be (clk, rs2, rs2_e);
+  wire [4:0] rd, rd_e, rd_m, rd_w;
+  rbuffer #(5) rd_be (clk, rd, rd_e);
+  rbuffer #(5) rd_bm (clk, rd_e, rd_m);
+  rbuffer #(5) rd_bw (clk, rd_m, rd_w);
 
-  //第二级
-  // wire [31:0] instr_r;
-  wire [4:0] rs1;
-  wire [4:0] rs2;
-  wire [4:0] rd;
-  wire [31:0] imm;
-  // wire [31:0] jmp_addr;
-  wire control_signals_t cs;
-  wire control_signals_t cs_s;
-  wire [2:0] func3;
+  wire [31:0] r1, r1_e, r1_m, r1_w;
+  rbuffer #(32) r1_be (clk, r1, r1_e);
+  rbuffer #(32) r1_bm (clk, r1_e, r1_m);
+  rbuffer #(32) r1_bw (clk, r1_m, r1_w);
+  wire [31:0] r2, r2_e, r2_m, r2_w;
+  rbuffer #(32) r2_be (clk, r2, r2_e);
+  rbuffer #(32) r2_bm (clk, r2_e, r2_m);
+  rbuffer #(32) r2_bw (clk, r2_m, r2_w);
+
+  wire [31:0] imm, imm_e;
+  rbuffer #(32) imm_be (clk, imm, imm_e);
+
+  wire [2:0] func3, func3_e;
+  rbuffer #(3) func3_be (clk, func3, func3_e);
   wire [1:0] alu_src_sel;
 
-  wire s, l, w, j, b, wb_src, sub;
-  wire data_width dw;
-  wire ignore_first_operand; 
-  assign {s, l, w, j, b, wb_src, sub, dw, ignore_first_operand} = cs;
-  assign cs_o = cs;  //TODO make it stored in register
+  wire control_signals_t cs, cs_e, cs_m, cs_w;
+  rbuffer #($size(control_signals_t)) cs_be (clk, cs, cs_e);
+  rbuffer #($size(control_signals_t)) cs_bm (clk, cs_e, cs_m);
+  rbuffer #($size(control_signals_t)) cs_bw (clk, cs_m, cs_w);
+
+  wire [31:0] alu_mux_input_1;
+  wire [31:0] alu_mux_input_2;
+  wire [31:0] alu_res, alu_res_m;
+  rbuffer #(32) alu_res_bm (clk, alu_res, alu_res_m);
+
+  wire [31:0] write_back;
+
+  assign pc_next = (cs.j)? alu_res : (branch_hit)? branch_addr: pc_current + 4;
+  assign pc_addr = pc_current;
+  always @(posedge clk) begin
+    pc_current <= pc_next;
+  end
 
   ir_dec_ctrl layer2 (.clk(clk), .ir(instr), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
 
   registers regs (
       .clk(clk),
       .rst_n(rst_n),
-      .w_en(wr_en_s),
+      .w_en(cs_w.w),
       .rs1(rs1),
       .rs2(rs2),
-      .rd(rd_s),
-      .w_data(data_r),
-      .rd_data1(data1),
-      .rd_data2(data2)
-  );  //数据写回
+      .rd(rd_w),
+      .w_data(write_back),
+      .rd_data1(r1),
+      .rd_data2(r2)
+  ); 
 
-  wire [31:0] addr_r;
-  receive #32 U3 (
-      .clk(clk),
-      .data(addr),
-      .data_r(addr_r)
-  );  //取出地址
-
-  wire [2:0] func3_d;
-  wire [2:0] func3_r;
-  wire func_d;
-  wire func_r;
-  wire [4:0] rd_d;
-  wire [4:0] rd_s;
-
-  wire [31:0] data;
-  wire [31:0] data_r;
-  wire [31:0] data1;
-  wire [31:0] data1_d;
-  wire [31:0] data1_r;
-  wire [31:0] data2;
-  wire [31:0] data2_d;
-  wire [31:0] alu_mux_input_1;
-  wire [31:0] alu_mux_input_2;
-  wire [31:0] data_out;
 
   assign branch_addr = pc_current + imm;
-  wire branch_hit;
-  wire wr_en_s;
-  branch branch_m (
+  branch branch_e (
     .en(cs.b),
-    .opr1(data1),
-    .opr2(data2),
-    .func3(func3),
+    .opr1(r1_e),
+    .opr2(r2_e),
+    .func3(func3_e),
     .success(branch_hit)
     );
 
-  assign alu_mux_input_1 = (cs.ignore_first_operand)? 0: alu_src_sel[0]?pc_current: data1;
-  assign alu_mux_input_2 = alu_src_sel[1]?imm: data2;
+  assign alu_mux_input_1 = (cs.ignore_first_operand)? 0: alu_src_sel[0]? pc_current: r1_e;
+  assign alu_mux_input_2 = alu_src_sel[1]? imm: r2_e;
 
-
-  wire [31:0] wr_addr;
-  wr_addr U9 (
-      .clk(clk),
-      .imme(imm),
-      .data1(data1),
-      .wr_addr(wr_addr)
-  );  //地址计算
-  //寄存器存数据，到下一级流水线中取出使用
-  temporary #32 U10 (
-      .clk(clk),
-      .data(data1),
-      .data_d(data1_d)
-  );  //寄存器存入数据，源寄存器rs1的数据
-  temporary #32 U11 (
-      .clk(clk),
-      .data(data2),
-      .data_d(data2_d)
-  );  //寄存器存入数据，源寄存器rs2的数据
-  temporary #5 U12 (
-      .clk(clk),
-      .data(rd),
-      .data_d(rd_d)
-  );  //寄存器存入数据目标寄存器
-  temporary #3 U13 (
-      .clk(clk),
-      .data(func3),
-      .data_d(func3_d)
-  );  //寄存器存入数据func3
-  temporary #1 U14 (
-      .clk(clk),
-      .data(cs.s),
-      .data_d(func_d)
-  );  //寄存器存入数据func
-
-  //第三级流水线
-  //通过移位寄存器取出数据和放入数据
-  shift #(2, 32) U15 (
-      .clk(clk),
-      .data(wr_addr),
-      .data_s(wr_addr_s)
-  );  //取出
-  shift #(2, 32) U16 (
-      .clk(clk),
-      .data(data2_d),
-      .data_s(data2_s)
-  );  //取出rs2中的数据
-
-  shift #(2, $size(control_signals_t)) buffered_control_signals (
-    .clk(clk),
-    .data(cs),
-    .data_s(cs_s)
-  );
-  shift #(2, 1) buffered_w (
-    .clk(clk),
-    .data(cs_s.w),
-    .data_s(wr_en_s)
-  );
-
-  shift #(3, 5) U23 (
-      .clk(clk),
-      .data(rd_d),
-      .data_s(rd_s)
-  );
-
-  receive #3 U28 (
-      .clk(clk),
-      .data(func3_d),
-      .data_r(func3_r)
-  );  //取出func3
-
-  alu alu_m (
-      .func3(func3_r),
-      .cs(cs),
+  alu alu_e (
+      .func3(func3_e),
+      .cs(cs_e),
       .alu_a(alu_mux_input_1),
       .alu_b(alu_mux_input_2),
-      .overwrite_add(cs.j | alu_src_sel[1] & alu_src_sel[0]), //TODO clarify more, when both bits are set, it means its either U or J type. However, we only want to detect jump type. This is not a good solution
+      .overwrite_add(cs_e.j | alu_src_sel[1] & alu_src_sel[0]), //TODO clarify more, when both bits are set, it means its either U or J type. However, we only want to detect jump type. This is not a good solution
       .overflow(),
-      .alu_result(data_out)
+      .alu_result(alu_res)
   );
 
-  // assign mem_write = cs.w;
-  assign data = cs.l? data_mem : data_out;
-
-  receive #32 U38 (
-      .clk(clk),
-      .data(data),
-      .data_r(data_r)
-  );
+  assign cs_om = cs_m;
+  assign write_back = cs_w.j? pc_w + 4: cs_w.l? data_mem : alu_res_m;
 endmodule

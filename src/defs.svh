@@ -2,6 +2,7 @@
 `define DEFS_SVH
 
 `define IR_WIDTH 32
+`define IR_ADDR_WIDTH $clog2(IR_WIDTH)
 
 typedef struct packed {
   logic [1:0] alu_src_sel; 
