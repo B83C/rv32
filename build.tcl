@@ -68,7 +68,7 @@ if {![files_changed $source_files $synth_checkpoint]} {
     puts "Source files changed. Synthesizing design..."
 	# generate_target all [get_ips *]
 	# synth_ip [get_ips *] 
-    synth_design -top main -part $partNum -incremental_mode quick
+    synth_design -top risc_v -part $partNum -incremental_mode quick
     write_checkpoint -force $synth_checkpoint
 }
 

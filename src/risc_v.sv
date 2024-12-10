@@ -1,25 +1,5 @@
 `timescale 1ns / 1ps
 `include "defs.svh"
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 2024/12/08 18:32:34
-// Design Name: 
-// Module Name: risc_v
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module risc_v (
     input clk,
