@@ -61,6 +61,7 @@ assign alu_src_sel = d_res.alu_info.alu_src_sel;
 always @(posedge clk) begin
   d_res <= '{'{default:0}, T(None)};
   casez ({func7, func3, opcode}) 
+    //RV32I
     {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1,ignore_first_operand:1,default:0}, T(U)}; //LUI
     {7'd?, 3'd?, 7'b0010111}:  d_res <= '{'{w:1,default:0}, T(U)}; //AUIPC
     {7'd?, 3'd?, 7'b1101111}:  d_res <= '{'{w:1,j:1,default:0}, T(J)}; //JAL
@@ -103,6 +104,16 @@ always @(posedge clk) begin
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //PAUSE
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //ECALL
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //EBREAK 
+
+    //RV32M
+    {7'b0000001, MUL, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //MUL
+    {7'b0000001, MULH, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //MULH
+    {7'b0000001, MULHSU, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //MULHSU
+    {7'b0000001, MULHU, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //MULHU
+    {7'b0000001, DIV, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //DIV
+    {7'b0000001, DIVU, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //DIVU
+    {7'b0000001, REM, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //REM
+    {7'b0000001, REM, 7'b0110011}: d_res <= '{'{w:1,m:1,default:0}, T(R)}; //REMU    
     default: d_res <= '{'{default:0}, T(None)}; //NOP
   endcase
 end

@@ -4,6 +4,8 @@
 `define IR_WIDTH 32
 `define IR_ADDR_WIDTH $clog2(IR_WIDTH)
 
+parameter XLEN = 32;
+
 typedef struct packed {
   logic [1:0] alu_src_sel; 
   logic [32 - 1 :0] immediate;
@@ -29,6 +31,17 @@ typedef enum logic[2:0]{
   GEU
 } branch_op_t;
 
+typedef enum logic[2:0]{
+  MUL,
+  MULH,
+  MULHSU,
+  MULHU,
+  DIV,
+  DIVU,
+  REM,
+  REMU
+} mul_op_t;
+
 typedef enum {
   R,
   I,
@@ -52,6 +65,7 @@ typedef enum logic[1:0] {
 } data_width ;
 
 typedef struct packed {
+  //RV32I
   logic s;
   logic l;
   logic w;
@@ -61,6 +75,9 @@ typedef struct packed {
   logic sign;
   logic [1:0] dw; //TODO
   logic ignore_first_operand;
+
+  //RV32M
+  logic m;
 } control_signals_t;
 
 `endif

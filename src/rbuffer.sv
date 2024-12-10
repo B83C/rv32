@@ -2,6 +2,7 @@
 
 module rbuffer #(parameter Nbits = 32 )(
     input clk,
+    input en,
     input rst_n,
     input [Nbits-1:0] in,
     output logic [Nbits-1:0] out
@@ -9,7 +10,7 @@ module rbuffer #(parameter Nbits = 32 )(
   always @(posedge clk, negedge rst_n) begin
     if(!rst_n) begin
       out <= 0;
-    end else begin
+    end else if (en) begin
       out <= in;
     end
   end

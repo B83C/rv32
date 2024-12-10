@@ -1,5 +1,8 @@
 .Xil/*
+.Xil
 target/*
 target/
 sim/*
 sim/
+.zig-cache/*
+.zig-cache

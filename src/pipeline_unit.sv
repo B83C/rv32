@@ -13,51 +13,53 @@ module pipeline_unit (
     output control_signals_t cs_om
 );
 
+  wire stall_f, stall_d;
   wire branch_hit;
   wire [31:0] jmp_addr;
  
   wire [31:0] instr_d, pc, pc_f, pc_d, pc_e, pc_m, pc_w;
-  rbuffer #(32) instr_b (clk, rst_n, instr, instr_d);
-  rbuffer #(32) pc_bf (clk, rst_n, pc, pc_f);
-  rbuffer #(32) pc_bd (clk, rst_n, pc_f, pc_d);
-  rbuffer #(32) pc_be (clk, rst_n, pc_d, pc_e);
-  rbuffer #(32) pc_bm (clk, rst_n, pc_e, pc_m);
-  rbuffer #(32) pc_bw (clk, rst_n, pc_m, pc_w);
+  rbuffer #(32) instr_bd (clk, !stall_d, rst_n, instr, instr_d);
+
+  rbuffer #(32) pc_bf (clk, !stall_f, rst_n, pc, pc_f);
+  rbuffer #(32) pc_bd (clk, !stall_d, rst_n, pc_f, pc_d);
+  rbuffer #(32) pc_be (clk, 1, rst_n, pc_d, pc_e);
+  rbuffer #(32) pc_bm (clk, 1, rst_n, pc_e, pc_m);
+  rbuffer #(32) pc_bw (clk, 1, rst_n, pc_m, pc_w);
 
   wire register_data_sel r1_sel, r2_sel;
   wire [4:0] rs1, rs1_e;
   wire [4:0] rs2, rs2_e;
-  rbuffer #(5) rs1_be (clk, rst_n, rs1, rs1_e);
-  rbuffer #(5) rs2_be (clk, rst_n, rs2, rs2_e);
+  rbuffer #(5) rs1_be (clk, 1, rst_n, rs1, rs1_e);
+  rbuffer #(5) rs2_be (clk, 1, rst_n, rs2, rs2_e);
   wire [4:0] rd, rd_e, rd_m, rd_w;
-  rbuffer #(5) rd_be (clk, rst_n, rd, rd_e);
-  rbuffer #(5) rd_bm (clk, rst_n, rd_e, rd_m);
-  rbuffer #(5) rd_bw (clk, rst_n, rd_m, rd_w);
+  rbuffer #(5) rd_be (clk, 1, rst_n, rd, rd_e);
+  rbuffer #(5) rd_bm (clk, 1, rst_n, rd_e, rd_m);
+  rbuffer #(5) rd_bw (clk, 1, rst_n, rd_m, rd_w);
 
   wire [31:0] r1, r1_e;
-  rbuffer #(32) r1_be (clk, rst_n, r1, r1_e);
+  rbuffer #(32) r1_be (clk, 1, rst_n, r1, r1_e);
   wire [31:0] r2, r2_e;
-  rbuffer #(32) r2_be (clk, rst_n, r2, r2_e);
+  rbuffer #(32) r2_be (clk, 1, rst_n, r2, r2_e);
 
   wire [31:0] r1_mux, r2_mux, r2_mux_m;
-  rbuffer #(32) r2_mux_bm (clk, rst_n, r2_mux, r2_mux_m);
+  rbuffer #(32) r2_mux_bm (clk, 1, rst_n, r2_mux, r2_mux_m);
 
   wire [31:0] imm, imm_e;
-  rbuffer #(32) imm_be (clk, rst_n, imm, imm_e);
+  rbuffer #(32) imm_be (clk, 1, rst_n, imm, imm_e);
 
   wire [2:0] func3, func3_e;
-  rbuffer #(3) func3_be (clk, rst_n, func3, func3_e);
+  rbuffer #(3) func3_be (clk, 1, rst_n, func3, func3_e);
   wire [1:0] alu_src_sel;
 
   wire control_signals_t cs, cs_e, cs_m, cs_w;
-  rbuffer #($size(control_signals_t)) cs_be (clk, rst_n, cs, cs_e);
-  rbuffer #($size(control_signals_t)) cs_bm (clk, rst_n, cs_e, cs_m);
-  rbuffer #($size(control_signals_t)) cs_bw (clk, rst_n, cs_m, cs_w);
+  rbuffer #($size(control_signals_t)) cs_be (clk, 1, rst_n, cs, cs_e);
+  rbuffer #($size(control_signals_t)) cs_bm (clk, 1, rst_n, cs_e, cs_m);
+  rbuffer #($size(control_signals_t)) cs_bw (clk, 1, rst_n, cs_m, cs_w);
 
   wire [31:0] alu_mux_input_1;
   wire [31:0] alu_mux_input_2;
   wire [31:0] alu_res, alu_res_m;
-  rbuffer #(32) alu_res_bm (clk, rst_n, alu_res, alu_res_m);
+  rbuffer #(32) alu_res_bm (clk, 1, rst_n, alu_res, alu_res_m);
 
   wire [31:0] write_back;
 
