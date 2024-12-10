@@ -4,24 +4,29 @@
 `define IR_WIDTH 32
 
 typedef struct packed {
-  logic [1:0] alu_src_sel; //
+  logic [1:0] alu_src_sel; 
   logic [32 - 1 :0] immediate;
 } alu_info_t;
 
-typedef enum {
+typedef enum logic[2:0]{
   ADD = 0,
-  SUB,
   SLL,
-  SLA,
-  SRL,
-  SRA,
   SLT,
   SLTU,
   XOR,
+  SRL,
   OR,
-  AND,
-  NONE
+  AND
 } alu_op_t;
+
+typedef enum logic[2:0]{
+  EQ = 0,
+  NE,
+  LT = 4,
+  GE,
+  LTU,
+  GEU
+} branch_op_t;
 
 typedef enum {
   R,
@@ -48,6 +53,7 @@ typedef struct packed {
   logic wb_src;
   logic sign;
   logic [1:0] dw; //TODO
+  logic ignore_first_operand;
 } control_signals_t;
 
 `endif

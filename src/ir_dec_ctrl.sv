@@ -14,16 +14,11 @@ module ir_dec_ctrl #(
   // input en,
   input [IR_WIDTH - 1: 0] ir,
   output control_signals_t cs,
-  // output s, l, w, j, b, sub,
-  // output wb_src,
   output [4:0] rs1, rs2, rd,
   output [1:0] alu_src_sel,
-  // output alu_op_t alu_op,
   output [IR_WIDTH - 1: 0] imm,
-  output [IR_WIDTH - 1: 0] jmp_addr,
-  output [6:0] opcode,
-  output [2:0] func3,
-  output [6:0] func7
+  output [2:0] func3
+  // output [6:0] func7
 );
 
 // typedef struct {
@@ -36,9 +31,9 @@ module ir_dec_ctrl #(
 // instr_type it
 
 // wire [2:0] func3;
-// wire [6:0] func7;
+wire [6:0] func7;
 wire [11:0] func12;
-// wire [6:0] opcode;
+wire [6:0] opcode;
 
 //Buffered;
 // logic [31:0] ir;
@@ -51,8 +46,6 @@ assign opcode = ir[6:0];
 assign rs1 = ir[19:15];
 assign rs2 = ir[24:20];
 assign rd = ir[11:7];
-
-assign jmp_addr = { {12{ir[31]}}, ir[31], ir[19:12], ir[20], ir[30:21] };  //jal立即数扩展输出
 
 function logic[33:0] T(instr_type t); 
   case (t) 
@@ -83,16 +76,16 @@ assign alu_src_sel = d_res.alu_info.alu_src_sel;
 always @(posedge clk) begin
   d_res <= '{'{default:0}, T(None)};
   casez ({func7, func3, opcode}) 
-    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1,default:0}, T(U)}; //LUI
+    {7'd?, 3'd?, 7'b0110111}:  d_res <= '{'{w:1,ignore_first_operand:1,default:0}, T(U)}; //LUI
     {7'd?, 3'd?, 7'b0010111}:  d_res <= '{'{w:1,default:0}, T(U)}; //AUIPC
     {7'd?, 3'd?, 7'b1101111}:  d_res <= '{'{w:1,j:1,default:0}, T(J)}; //JAL
     {7'd?, 3'd?, 7'b1100111}:  d_res <= '{'{w:1,j:1,default:0}, T(I)}; //JALR
-    {7'd?, 3'd0, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BEQ
-    {7'd?, 3'd1, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BNE
-    {7'd?, 3'd4, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLT
-    {7'd?, 3'd5, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGE
-    {7'd?, 3'd6, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLTU
-    {7'd?, 3'd7, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGEU
+    {7'd?, EQ, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BEQ
+    {7'd?, NE, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BNE
+    {7'd?, LT, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLT
+    {7'd?, GE, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGE
+    {7'd?, LTU, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BLTU
+    {7'd?, GEU, 7'b1100011}:  d_res <= '{'{b:1,default:0}, T(B)}; //BGEU
     {7'd?, 3'd0, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DB,wb_src:1,sign:1,default:0}, T(I)}; //LB
     {7'd?, 3'd1, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DH,wb_src:1,sign:1,default:0}, T(I)}; //LH
     {7'd?, 3'd2, 7'b0000011}:  d_res <= '{'{l:1,w:1,dw:DW,wb_src:1,sign:1,default:0}, T(I)}; //LW
@@ -101,25 +94,25 @@ always @(posedge clk) begin
     {7'd?, 3'd0, 7'b0100011}:  d_res <= '{'{s:1,dw:DB,default:0}, T(S)}; //SB
     {7'd?, 3'd1, 7'b0100011}:  d_res <= '{'{s:1,dw:DH,default:0}, T(S)}; //SH
     {7'd?, 3'd2, 7'b0100011}:  d_res <= '{'{s:1,dw:DW,default:0}, T(S)}; //SW
-    {7'd?, 3'd0, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ADDI
-    {7'd?, 3'd2, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTI
-    {7'd?, 3'd3, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTIU
-    {7'd?, 3'd4, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //XORI
-    {7'd?, 3'd6, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ORI
-    {7'd?, 3'd7, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ANDI
-    {7'd?, 3'd1, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLLI
-    {7'd0, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRLI 
-    {7'b0100000, 3'd5, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRAI
-    {7'd0, 3'd0, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //ADD
-    {7'b0100000, 3'd0, 7'b0110011}:  d_res <= '{'{w:1, sign:1 ,default:0}, T(R)}; //SUB
-    {7'd0, 3'd1, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLL
-    {7'd0, 3'd2, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLT
-    {7'd0, 3'd3, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLTU
-    {7'd0, 3'd4, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //XOR
-    {7'd0, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRL
-    {7'b0100000, 3'd5, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRA
-    {7'd0, 3'd6, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //OR
-    {7'd0, 3'd7, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //AND
+    {7'd?, ADD, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ADDI
+    {7'd?, SLT, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTI
+    {7'd?, SLTU, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLTIU
+    {7'd?, XOR, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //XORI
+    {7'd?, OR, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ORI
+    {7'd?, AND, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //ANDI
+    {7'd?, SLL, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SLLI
+    {7'd0, SRL, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRLI 
+    {7'b0100000, SRL, 7'b0010011}:  d_res <= '{'{w:1,default:0}, T(I)}; //SRAI
+    {7'd0, ADD, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //ADD
+    {7'b0100000, ADD, 7'b0110011}:  d_res <= '{'{w:1, sign:1 ,default:0}, T(R)}; //SUB
+    {7'd0, SLL, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLL
+    {7'd0, SLT, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLT
+    {7'd0, SLTU, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SLTU
+    {7'd0, XOR, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //XOR
+    {7'd0, SRL, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRL
+    {7'b0100000, SRL, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //SRA
+    {7'd0, OR, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //OR
+    {7'd0, AND, 7'b0110011}:  d_res <= '{'{w:1,default:0}, T(R)}; //AND
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //FENCE
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)};  //FENCE.TSO
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //PAUSE

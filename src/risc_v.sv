@@ -29,12 +29,6 @@ module risc_v (
   wire [31:0] instr;
   wire [31:0] wr_addr_s;
   wire [31:0] data2_s;
-  // wire lw_en_s;
-  // wire sw_en_s;
-  // wire lh_en_s;
-  // wire sh_en_s;
-  // wire lb_en_s;
-  // wire sb_en_s;
   wire control_signals_t cs;
   wire [31:0] data_mem;
 
@@ -51,24 +45,12 @@ module risc_v (
       .wr_addr_s(wr_addr_s),
       .data2_s(data2_s),
       .cs_o(cs)
-      // .lw_en_s(lw_en_s),
-      // .sw_en_s(sw_en_s),
-      // .lh_en_s(lh_en_s),
-      // .sh_en_s(sh_en_s),
-      // .lb_en_s(lb_en_s),
-      // .sb_en_s(sb_en_s)
   );
   data_mem U3 (
       .clk(clk),
       .addr(addr),
       .data2(data2_s),
       .cs(cs),
-      // .lw_en(lw_en_s),
-      // .sw_en(sw_en_s),
-      // .lh_en(lh_en_s)
-      // , .sh_en(sh_en_s),
-      // .lb_en(lb_en_s),
-      // .sb_en(sb_en_s),
       .memory(data_mem)
   );
 endmodule
