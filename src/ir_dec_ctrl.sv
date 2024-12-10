@@ -103,7 +103,7 @@ always @(posedge clk) begin
     //TODO: {10'd?, 7'b0001111}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //PAUSE
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //ECALL
     //TODO: {10'd?, 7'b1110011}:  {s, l, w, b, imm, alu_op_sel} <= {4'b0000, im(No, sel(ne)}; //EBREAK 
-    default: d_res <= '{'{default:0}, T(None)};
+    default: d_res <= '{'{default:0}, T(None)}; //NOP
   endcase
 end
 

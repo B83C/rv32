@@ -36,7 +36,7 @@ module risc_v (
       .addr (pc_addr),
       .instr(instr)
   );
-  datapath_1 data_flow (
+  pipeline_unit pu1 (
       .clk(clk),
       .rst_n(rst_n),
       .instr(instr),
