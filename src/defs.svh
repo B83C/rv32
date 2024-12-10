@@ -39,6 +39,12 @@ typedef enum {
   None
 } instr_type;
 
+typedef enum logic [1:0]{
+  RAW,
+  ALU,
+  WB
+} register_data_sel;
+
 typedef enum logic[1:0] {
   DW = 0,
   DH,

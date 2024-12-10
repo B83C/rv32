@@ -25,32 +25,32 @@ module risc_v (
     input clk,
     input rst_n
 );
-  wire [31:0] addr;
+  wire [31:0] pc_addr;
   wire [31:0] instr;
-  wire [31:0] wr_addr_s;
-  wire [31:0] data2_s;
+  wire [31:0] mem_write_addr;
+  wire [31:0] mem_write_data;
   wire control_signals_t cs_m;
-  wire [31:0] data_mem;
+  wire [31:0] mem_read_data;
 
-  instr_register U1 (
-      .addr (addr),
+  instr_src instr_mem(
+      .addr (pc_addr),
       .instr(instr)
   );
-  datapath_1 U2 (
+  datapath_1 data_flow (
       .clk(clk),
       .rst_n(rst_n),
       .instr(instr),
-      .data_mem(data_mem),
-      .pc_addr(addr),
-      .wr_addr_s(wr_addr_s),
-      .data2_s(data2_s),
+      .data_mem(mem_read_data),
+      .pc_addr(pc_addr),
+      .mem_write_addr(mem_write_addr),
+      .mem_write_data(mem_write_data),
       .cs_om(cs_m)
   );
-  data_mem U3 (
+  data_src data_mem(
       .clk(clk),
-      .addr(addr),
-      .data2(data2_s),
+      .addr(mem_write_addr),
+      .wdata(mem_write_data),
       .cs(cs_m),
-      .memory(data_mem)
+      .memory(mem_read_data)
   );
 endmodule
