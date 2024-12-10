@@ -52,7 +52,7 @@ assign rs1 = ir[19:15];
 assign rs2 = ir[24:20];
 assign rd = ir[11:7];
 
-assign jmp_addr = { {12{ir[31]}}, ir[31], ir[19:12], ir[20], ir[30:21] };  //jalç«‹å³æ•°æ‰©å±•è¾“å‡º
+assign jmp_addr = { {12{ir[31]}}, ir[31], ir[19:12], ir[20], ir[30:21] };  //jalÁ¢¼´ÊıÀ©Õ¹Êä³ö
 
 function logic[33:0] im_sel (instr_type t); 
   case (t) 
