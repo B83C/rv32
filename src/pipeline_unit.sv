@@ -61,6 +61,9 @@ module pipeline_unit (
   wire [31:0] alu_res, alu_res_m;
   rbuffer #(32) alu_res_bm (clk, 1, rst_n, alu_res, alu_res_m);
 
+  wire [31:0] mul_res, mul_res_w;
+  rbuffer #(32) mul_res_bw (clk, 1, rst_n, mul_res, mul_res_w);
+
   wire [31:0] write_back;
 
   //Stage 1
@@ -119,6 +122,13 @@ module pipeline_unit (
       .alu_result(alu_res)
   );
 
+  multiplier m_e (
+    .r1(r1_e),
+    .r2(r2_e),
+    .op(mul_op_t'(func3_e)),
+    .rd(mul_res)
+  );
+
   //Stage 4
 
   assign cs_om = cs_m;
@@ -127,7 +137,7 @@ module pipeline_unit (
 
   //Stage 5
 
-  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? data_mem : alu_res_m;
+  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? data_mem : (cs_w.m)? mul_res_w: alu_res_m;
 
  //Misc
 

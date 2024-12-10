@@ -9,21 +9,22 @@ module multiplier(
 
   wire [2*XLEN - 1:0] full_mul;
   wire signed [2*XLEN - 1:0] full_mul_s;
-  wire [XLEN - 1:0] div;
+  wire signed [2*XLEN - 1:0] full_mul_su;
 
   assign full_mul = r1 * r2;
   assign full_mul_s = $signed(r1) * $signed(r2);
+  assign full_mul_su = $signed(r1) * r2;
 
   always_comb begin
     case(op)
-      MUL: rd = full_mul[0 +:XLEN];
-      MULH: rd = full_mul[XLEN  +:XLEN]; 
-      MULHSU: rd = 
-      MULHU: 
-      DIV: 
-      DIVU: 
-      REM: 
-      REMU:
+      MUL: rd = full_mul_s[0 +:XLEN];
+      MULH: rd = full_mul_s[XLEN  +:XLEN]; 
+      MULHSU: rd = full_mul_su[XLEN +: XLEN];
+      MULHU: rd = full_mul[XLEN +: XLEN];
+      DIV: rd = $signed(r1) / $signed(r2);
+      DIVU: rd = r1 / r2;
+      REM: rd = $signed(r1) % $signed(r2);
+      REMU: rd = r1 % r2;
     endcase
   	
   end
