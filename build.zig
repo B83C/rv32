@@ -1,11 +1,7 @@
 const std = @import("std");
-// const CrossTarget = @import("std").zig.CrossTarget;
 const Target = @import("std").Target;
 const Feature = @import("std").Target.Cpu.Feature;
 
-// Although this function looks imperative, note that its job is to
-// declaratively construct a build graph that will be executed by an external
-// runner.
 pub fn build(b: *std.Build) void {
     const features = Target.riscv.Feature;
     var disabled_features = Feature.Set.empty;
@@ -34,16 +30,16 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = .ReleaseSmall,
     });
-
     exe.setLinkerScriptPath(b.path("src/linker.ld"));
 
-    // b.installArtifact(exe);
+    const bin = exe.addObjCopy(.{ .format = .bin });
 
-    const bin = b.addObjCopy(exe.getEmittedBin(), .{
-        .format = .bin,
-    });
-    bin.step.dependOn(&exe.step);
+    const generate_bin = b.addInstallBinFile(exe.getOutput(), "rv32_fpga.bin");
+    b.getInstallStep().dependOn(&generate_bin.step);
 
-    const copy_bin = b.addInstallBinFile(bin.getOutput(), "rv32_fpga.bin");
-    b.default_step.dependOn(&copy_bin.step);
+    const emulate_step = b.step("emu", "Emulate in QEMU");
+    const qemu = b.addSystemCommand(&.{"qemu-system-riscv32"});
+    qemu.addArgs(&.{ "-M", "virt", "-nographic", "-bios" });
+    qemu.addFileArg(copy_bin.source);
+    emulate_step.dependOn(&qemu.step);
 }

@@ -1,4 +1,3 @@
-
 __stack_size = 4K;
 
 ENTRY(_start)

@@ -18,7 +18,7 @@ module multiplier(
     case(op)
       MUL: rd = full_mul[0 +:XLEN];
       MULH: rd = full_mul[XLEN  +:XLEN]; 
-      MULHSU: 
+      MULHSU: rd = 
       MULHU: 
       DIV: 
       DIVU: 
