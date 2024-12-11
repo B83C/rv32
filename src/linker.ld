@@ -1,13 +1,15 @@
+MEMORY {
+  PROG: ORIGIN = 0x0, LENGTH = 0x1024
+  
+}
 __stack_size = 4K;
 
 ENTRY(_start)
 
 SECTIONS {
-   . = 0x80000000;
-
    .text : ALIGN(16) {
      *(.text)
-   }
+   } > PROG
 
    .data : ALIGN(16) {
      *(.rodata)

@@ -16,8 +16,10 @@ module registers (
   //Synched writes
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) regs <= 0;
-    else if (w_en & (rd != 0)) regs[rd] <= w_data;
-    else regs[rd] <= regs[rd];
+    else if (w_en & (rd != 0)) begin
+      $display("Writing to register: %h, Data: %h", rd, w_data);
+    	regs[rd] <= w_data;
+    end
   end
 
   //Async reads

@@ -33,12 +33,14 @@ module data_src (
   always @(posedge clk) begin
     if(cs.l) begin
       memory <= {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))}; //TODO: Clean up
+      $display("Loading from memory at %h, data: %h", addr, {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))});
     end   
   end
 
   //Little endian
   always @(negedge clk) begin
     if (cs.s) begin
+      $display("Storing to memory at %h, data: %h", addr, {>>8{wdata & mask(data_width'(cs.dw))}});
       data[addr +:4] <= {>>8{wdata & mask(data_width'(cs.dw))}};
     end
   end

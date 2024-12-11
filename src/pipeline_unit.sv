@@ -49,7 +49,8 @@ module pipeline_unit (
 
   wire [2:0] func3, func3_e;
   rbuffer #(3) func3_be (clk, 1, rst_n, func3, func3_e);
-  wire [1:0] alu_src_sel;
+  wire [1:0] alu_src_sel, alu_src_sel_e;
+  rbuffer #(2) alu_src_sel_be (clk, 1, rst_n, alu_src_sel, alu_src_sel_e);
 
   wire control_signals_t cs, cs_e, cs_m, cs_w;
   rbuffer #($size(control_signals_t)) cs_be (clk, 1, rst_n, cs, cs_e);
@@ -58,21 +59,22 @@ module pipeline_unit (
 
   wire [31:0] alu_mux_input_1;
   wire [31:0] alu_mux_input_2;
-  wire [31:0] alu_res, alu_res_m;
+  wire [31:0] alu_res, alu_res_m, alu_res_w;
   rbuffer #(32) alu_res_bm (clk, 1, rst_n, alu_res, alu_res_m);
-
-  wire [31:0] mul_res, mul_res_w;
-  rbuffer #(32) mul_res_bw (clk, 1, rst_n, mul_res, mul_res_w);
+  rbuffer #(32) alu_res_bw (clk, 1, rst_n, alu_res_m, alu_res_w);
+  wire [31:0] mul_res;
+  rbuffer #(32) mul_res_bw (clk, 1, rst_n, (cs_w.m)? mul_res: alu_res_m, alu_res_w);
 
   wire [31:0] write_back;
 
   //Stage 1
   
   assign pc = (cs_e.j | (cs_e.b && branch_hit))? jmp_addr : pc_f + 4;
+  assign pc_addr = pc_f;
 
   //Stage 2
 
-  ir_dec_ctrl layer2 (.clk(clk), .ir(instr), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
+  ir_dec_ctrl ir_dec (.ir(instr), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
 
   registers reg_file (
       .clk(clk),
@@ -109,15 +111,15 @@ module pipeline_unit (
   assign r1_mux = reg_mux(r1_e, r1_sel);
   assign r2_mux = reg_mux(r2_e, r2_sel);
 
-  assign alu_mux_input_1 = (cs.ignore_first_operand)? 0: alu_src_sel[0]? pc_e: r1_mux;
-  assign alu_mux_input_2 = alu_src_sel[1]? imm: r2_mux;
+  assign alu_mux_input_1 = (cs.ignore_first_operand)? 0: alu_src_sel_e[0]? pc_e: r1_mux;
+  assign alu_mux_input_2 = alu_src_sel_e[1]? imm_e: r2_mux;
 
   alu alu_e (
       .func3(func3_e),
       .cs(cs_e),
       .alu_a(alu_mux_input_1),
       .alu_b(alu_mux_input_2),
-      .overwrite_add(alu_src_sel[1] & alu_src_sel[0]), //TODO clarify more, when both bits are set, it means its either U or J type. However, we only want to detect U type, and calculate the data to be written, esp in the case of lui and auipc
+      .overwrite_add(alu_src_sel_e[1] & alu_src_sel_e[0]), //TODO clarify more, when both bits are set, it means its either U or J type. However, we only want to detect U type, and calculate the data to be written, esp in the case of lui and auipc
       .overflow(),
       .alu_result(alu_res)
   );
@@ -137,7 +139,7 @@ module pipeline_unit (
 
   //Stage 5
 
-  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? data_mem : (cs_w.m)? mul_res_w: alu_res_m;
+  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? data_mem : alu_res_w;
 
  //Misc
 
