@@ -143,5 +143,5 @@ module pipeline_unit (
 
  //Misc
 
-  hazard hz(rs1_e, rs2_e, rd_m, rd_w, cs_m, cs_w, r1_sel, r2_sel);
+  hazard hz(rs1_e, rs2_e, rd_m, rd_w, cs_m, cs_w, r1_sel, r2_sel,stall_f,stall_d);
 endmodule
