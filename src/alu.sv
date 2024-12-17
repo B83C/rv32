@@ -6,8 +6,9 @@ module alu (
     input control_signals_t cs,
     input [31:0] alu_a, 
     input [31:0] alu_b,
-    input overwrite_add,
+    // input overwrite_add,
     output overflow,
+    output zero,
     output reg [31:0] alu_result
 );
 
@@ -27,44 +28,50 @@ module alu (
   assign salu_b = $signed(alu_b);
   assign shamt = alu_b[4:0];
 
-  wire alu_op_t opr;
+  assign zero = alu_result == 0;
+
+  // wire alu_op_t opr;
 
   //Add when instruction is jump
-  assign opr = (overwrite_add)? ADD: alu_op_t'(func3);
+  // assign opr = (overwrite_add)? ADD: alu_op_t'(func3);
 
   always_comb begin
-    case(opr) 
-      ADD: begin
-        alu_result = add_result;
-      end
-      SLL: begin
-        alu_result = alu_a << shamt;
-      end
-      SLT: begin
-        alu_result = {{31{1'b0}}, salu_a < salu_b};
-      end
-      SLTU: begin
-        alu_result = {{31{1'b0}}, alu_a < alu_b};
-      end
-      XOR: begin
-        alu_result = alu_a ^ alu_b;
-      end
-      SRL: begin
-        if(cs.sign) begin
-          alu_result = alu_a >>> shamt;
-        end else begin
-          alu_result = alu_a >> shamt;
+    if(cs.a) begin
+      case(alu_op_t'(func3)) 
+        ADD: begin
+          alu_result = add_result;
         end
-      end
-      OR: begin
-        alu_result = alu_a | alu_b;
-      end
-      AND: begin
-        alu_result = alu_a & alu_b;
-      end
-      default: begin
-        alu_result = 0;
-      end
-    endcase
+        SLL: begin
+          alu_result = alu_a << shamt;
+        end
+        SLT: begin
+          alu_result = {{31{1'b0}}, salu_a < salu_b};
+        end
+        SLTU: begin
+          alu_result = {{31{1'b0}}, alu_a < alu_b};
+        end
+        XOR: begin
+          alu_result = alu_a ^ alu_b;
+        end
+        SRL: begin
+          if(cs.sign) begin
+            alu_result = alu_a >>> shamt;
+          end else begin
+            alu_result = alu_a >> shamt;
+          end
+        end
+        OR: begin
+          alu_result = alu_a | alu_b;
+        end
+        AND: begin
+          alu_result = alu_a & alu_b;
+        end
+        default: begin
+          alu_result = 0;
+        end
+      endcase
+    end else begin
+      alu_result = add_result;
+    end
   end
 endmodule

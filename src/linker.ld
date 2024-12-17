@@ -1,7 +1,9 @@
 MEMORY {
-  PROG: ORIGIN = 0x0, LENGTH = 0x1024
-  
+  PROG : ORIGIN = 0x0, LENGTH = 0x1024
+  DATA : ORIGIN = 0x1024, LENGTH = 0x800
+  STACK : ORIGIN = 0x1824, LENGTH = 4K
 }
+
 __stack_size = 4K;
 
 ENTRY(_start)
@@ -16,7 +18,7 @@ SECTIONS {
      *(.rodata.*)
      *(.data)
      *(.data.*)
-   }
+   } > DATA
 
    .bss : ALIGN(16) {
      *(.bss)
@@ -25,7 +27,7 @@ SECTIONS {
 
    .stack : ALIGN(16) {
      _estack = .;
-   }
+   } > STACK
 
    _sstack = _estack + __stack_size;
  }

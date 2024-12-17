@@ -72,6 +72,7 @@ typedef struct packed {
   logic j;
   logic b;
   logic wb_src;
+  logic a; //ALU
   logic sign;
   logic [1:0] dw; //TODO
   logic ignore_first_operand;

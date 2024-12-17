@@ -34,12 +34,12 @@ pub fn build(b: *std.Build) void {
 
     const bin = exe.addObjCopy(.{ .format = .bin });
 
-    const generate_bin = b.addInstallBinFile(exe.getOutput(), "rv32_fpga.bin");
+    const generate_bin = b.addInstallBinFile(bin.getOutput(), "rv32_fpga.bin");
     b.getInstallStep().dependOn(&generate_bin.step);
 
     const emulate_step = b.step("emu", "Emulate in QEMU");
     const qemu = b.addSystemCommand(&.{"qemu-system-riscv32"});
     qemu.addArgs(&.{ "-M", "virt", "-nographic", "-bios" });
-    qemu.addFileArg(copy_bin.source);
+    qemu.addFileArg(generate_bin.source);
     emulate_step.dependOn(&qemu.step);
 }

@@ -12,7 +12,7 @@ module instr_src (
   initial begin
     file = $fopen("../zig-out/bin/rv32_fpga.bin", "rb");
     if (file != 0) begin
-      r = $fread(instr_mem, file);  // Read raw binary data into memory
+      r = $fread(instr_mem, file, 0, 'h1024);  // Read raw binary data into memory
       $fclose(file);
     end else begin
       $fatal("Failed to open binary file.");
