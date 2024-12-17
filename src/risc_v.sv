@@ -15,6 +15,7 @@ module risc_v (
     input uart_t_state,
     output [1:0]uart_t_ctrl
 );
+
   wire [31:0] pc_addr;
   wire [31:0] instr;
   wire [31:0] mem_write_addr;

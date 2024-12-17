@@ -88,7 +88,7 @@ module pipeline_unit (
   function logic[31:0] reg_mux(logic[31:0] rg, register_data_sel sel);
     case(sel)
       RAW: return rg;
-      ALU: return alu_res;
+      ALU: return alu_res; //TODO Overlapped with reg_e_mux
       default: return write_back; //Imply WB
     endcase
   endfunction

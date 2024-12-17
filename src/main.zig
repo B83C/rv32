@@ -14,6 +14,7 @@ comptime {
 
 export fn _start() callconv(.Naked) noreturn {
     asm volatile ("la sp, _sstack");
+    asm volatile ("la s0, _sstack");
 
     for ("Hello oeustnhaoeuworld!\n") |b| {
         uart.* = b;
