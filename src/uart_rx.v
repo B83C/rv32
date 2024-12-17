@@ -86,19 +86,19 @@ module uart_rx#(
                     next_state = DISABLE;
             end
             IDLE: begin
-                if(rx==1'b0) //ÏÂ½µÑØ¿ªÊ¼Í¨ĞÅ
+                if(rx==1'b0) //ä¸‹é™æ²¿å¼€å§‹é€šä¿¡
                     next_state = START;
                 else 
                     next_state = IDLE;
                 end
-            START: begin    //¿ªÊ¼½ÓÊÕÊı¾İ
+            START: begin    //å¼€å§‹æ¥æ”¶æ•°æ®
                 if(cycle_cnt==CYCLE-1)
                     next_state = REC;
                 else 
                     next_state = START;
                 end
             REC:begin
-                if(cycle_cnt==CYCLE-1&&bit_cnt==3'd7) //Êı¾İ½ÓÊÕÍê³É
+                if(cycle_cnt==CYCLE-1&&bit_cnt==3'd7) //æ•°æ®æ¥æ”¶å®Œæˆ
                     next_state = STOP;
                 else 
                     next_state = REC;
@@ -111,7 +111,7 @@ module uart_rx#(
                 end
             DATA:begin
                 if(finish_pose)
-                    next_state = IDLE;
+                    next_state = DISABLE;
                 else 
                     next_state = DATA;
             end
