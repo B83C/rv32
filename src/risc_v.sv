@@ -13,8 +13,16 @@ module risc_v (
 
     output [7:0]uart_t_data,
     input uart_t_state,
-    output [1:0]uart_t_ctrl
-);
+    output [1:0]uart_t_ctrl,
+
+    output h_sync,
+    output v_sync,
+    output [15:0] x,
+    output [15:0] y,
+    output video_active
+    
+    
+    );
 
   wire [31:0] pc_addr;
   wire [31:0] instr;
@@ -64,7 +72,14 @@ module risc_v (
 
       .uart_t_data(uart_t_data),
       .uart_t_state(uart_t_state),
-      .uart_t_ctrl(uart_t_ctrl)
+      .uart_t_ctrl(uart_t_ctrl),
+
+      .h_sync(h_sync),
+      .v_sync(v_sync),
+      .x(x),
+      .y(y),
+      .video_active(video_active)
+
 
   ); 
 
