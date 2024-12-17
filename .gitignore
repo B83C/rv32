@@ -9,3 +9,4 @@ sim/
 zig-out/
 zig-out/*
 .vscode/
+.vscode/*
