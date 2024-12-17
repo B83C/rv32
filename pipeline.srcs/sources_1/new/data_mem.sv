@@ -42,12 +42,12 @@ module data_mem (
 );
   localparam IO_REG_COUNT = 6;
   localparam REAL_MEM = 255-IO_REG_COUNT;
-  reg [7:0] data[0:REAL_MEM];
+  reg [7:0] data[0:REAL_MEM];//只有256-6=250个真正内存字节
 
-  reg [7:0] data_in[0:255];
+  reg [7:0] data_in[0:255];//给cpu提供256位地址用于写入
 
   always @(*)begin
-    for (integer i = 0; i < 255; i=i+1) begin
+    for (integer i = 0; i < 255; i=i+1) begin//IO寄存器有的由IO单元赋值，cpu只读；有的由cpu赋值，从逻辑上说cpu只需要写，不过当然也可以读
        case(255-i)
         0:data[i]=data_in[i];
         1:data[i]=data_in[i];//数码管可以读写

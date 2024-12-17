@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `include "defs.svh"
 
-module tb;
+module tb2;
 
   logic clk = 0;
   logic rst_n = 1;
@@ -10,8 +10,8 @@ module tb;
   control_signals_t cs;
 
   always #1 clk = ~clk;
-  // risc_v rv32(.clk(clk), .rst_n(rst_n));
-  data_mem dm(clk, addr, data2, cs, memory);
+  risc_v rv32(.clk(clk), .rst_n(rst_n));
+  // data_mem dm(clk, addr, data2, cs, memory);
 
   initial begin
     $dumpfile("waveform.fst");
