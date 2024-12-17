@@ -8,3 +8,4 @@ sim/
 .zig-cache
 zig-out/
 zig-out/*
+.vscode/
