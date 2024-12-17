@@ -5,8 +5,8 @@ module uart_rx#(
         output reg rx_data_valid,
         output reg [7:0] rx_data,
         input rx,
-        input rx_finished,
-
+        input [1:0]rx_ctrl,
+        output rx_ready,
 
         input clk,
         input rst
@@ -14,7 +14,15 @@ module uart_rx#(
     );
 
     localparam CYCLE = CLK_FREQ/BODE_RATE;
-    localparam IDLE=1,START=2,REC=3,STOP=4,DATA=5;
+    localparam  DISABLE=0,IDLE=1,START=2,REC=3,STOP=4,DATA=5;
+
+    reg finish_d0;
+    reg finish_d1;
+    wire finish_pose = finish_d0 & ~finish_d1;
+
+    reg receive_d0;
+    reg receive_d1;
+    wire receive_pose = receive_d0 & ~receive_d1;
 
     reg [2:0] state;
     reg [2:0] next_state;
@@ -22,6 +30,25 @@ module uart_rx#(
     reg [7:0] cycle_cnt;
     reg [2:0] bit_cnt;
 
+    always@(posedge clk or posedge rst) begin
+        if(rst) begin
+            finish_d0 <= 1'b0;
+            finish_d1 <= 1'b0;
+        end else begin
+            finish_d0 <= rx_ctrl[1];
+            finish_d1 <= finish_d0;
+        end
+    end
+
+    always@(posedge clk or posedge rst) begin
+        if(rst) begin
+            receive_d0 <= 1'b0;
+            receive_d1 <= 1'b0;
+        end else begin
+            receive_d0 <= rx_ctrl[0];
+            receive_d1 <= receive_d0;
+        end
+    end
 
     always@(posedge clk or posedge rst) begin
         if(rst) begin
@@ -52,6 +79,12 @@ module uart_rx#(
 
     always@(*) begin
         case(state) 
+            DISABLE: begin 
+                if(receive_pose)
+                    next_state = IDLE;
+                else 
+                    next_state = DISABLE;
+            end
             IDLE: begin
                 if(rx==1'b0) //下降沿开始通信
                     next_state = START;
@@ -77,7 +110,7 @@ module uart_rx#(
                     next_state = STOP;
                 end
             DATA:begin
-                if(rx_finished)
+                if(finish_pose)
                     next_state = IDLE;
                 else 
                     next_state = DATA;
@@ -100,6 +133,6 @@ module uart_rx#(
             rx_data_valid <= (next_state==DATA);
     end
 
-
+    assign rx_ready = (state==IDLE);
 
     endmodule

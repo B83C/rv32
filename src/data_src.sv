@@ -4,6 +4,7 @@
 //Named it source instead of memory so change of name is not needed when cache is implemented
 module data_src (
     input clk,
+    input mem_en,
     input [31:0] addr,
     input [31:0] wdata,
     input control_signals_t cs,
@@ -30,16 +31,21 @@ module data_src (
 
   reg [255:0][7:0] data;
 
-  always @(posedge clk) begin
-    if(cs.l) begin
+  always @(*) begin
       memory <= {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))}; //TODO: Clean up
+      
+  end
+
+    always @(posedge clk) begin
+    if(cs.l&&mem_en) begin
+      
       $display("Loading from memory at %h, data: %h", addr, {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))});
     end   
   end
 
   //Little endian
   always @(negedge clk) begin
-    if (cs.s) begin
+    if (cs.s&&mem_en) begin
       $display("Storing to memory at %h, data: %h", addr, {>>8{wdata & mask(data_width'(cs.dw))}});
       data[addr +:4] <= {>>8{wdata & mask(data_width'(cs.dw))}};
     end
