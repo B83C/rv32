@@ -55,6 +55,7 @@ typedef enum {
 typedef enum logic [1:0]{
   RAW,
   ALU,
+  MEM,
   WB
 } register_data_sel;
 
@@ -71,9 +72,9 @@ typedef struct packed {
   logic w;
   logic j;
   logic b;
-  logic wb_src;
   logic a; //ALU
   logic sign;
+  logic sign_ex;
   logic [1:0] dw; //TODO
   logic ignore_first_operand;
 

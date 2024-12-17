@@ -24,11 +24,14 @@ pub fn build(b: *std.Build) void {
         .cpu_features_sub = disabled_features,
     });
 
+    const optimise = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSmall });
+
     const exe = b.addExecutable(.{
         .name = "rv32_fpga",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
-        .optimize = .ReleaseSmall,
+        // .optimize = .Debug,
+        .optimize = optimise,
     });
     exe.setLinkerScriptPath(b.path("src/linker.ld"));
 

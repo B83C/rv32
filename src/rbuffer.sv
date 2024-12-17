@@ -14,8 +14,8 @@ module rbuffer #(parameter Nbits = 32, parameter RLen= 1)(
         if(!rst_n[i]) begin
           out[i] <= 0;
         end else if (en[i]) begin
-          out[i] <= (i == RLen -1)? in: out[i+1];
-        end
+          out[i] <= (i == RLen -1)? in: en[i+1]?out[i+1]:0;
+        end       
       end
     end
   endgenerate

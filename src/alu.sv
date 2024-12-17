@@ -23,9 +23,9 @@ module alu (
   );
 
   wire [ 4:0] shamt;
-  wire signed [31:0] salu_a, salu_b;
-  assign salu_a = $signed(alu_a);
-  assign salu_b = $signed(alu_b);
+  // wire signed [31:0] salu_a, salu_b;
+  // assign salu_a = $signed(alu_a);
+  // assign salu_b = $signed(alu_b);
   assign shamt = alu_b[4:0];
 
   assign zero = alu_result == 0;
@@ -45,10 +45,10 @@ module alu (
           alu_result = alu_a << shamt;
         end
         SLT: begin
-          alu_result = {{31{1'b0}}, salu_a < salu_b};
+          alu_result = {31'd0, overflow & add_result[31]};
         end
         SLTU: begin
-          alu_result = {{31{1'b0}}, alu_a < alu_b};
+          alu_result = {31'd0, overflow};
         end
         XOR: begin
           alu_result = alu_a ^ alu_b;
