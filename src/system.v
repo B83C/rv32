@@ -45,10 +45,10 @@ module sys(
         .dig(dig)
     );
 
-    uart_rx uart_rx_1 #(
+    uart_rx  #(
         .CLK_FREQ(CLK_FREQ),
         .BAUD_RATE(115200)
-    ) (
+    )uart_rx_1 (
         .clk(clk),
         .rst_n(rst_n),
         .rx_data(uart_r_data),
@@ -58,10 +58,10 @@ module sys(
         .rx(uart_rx)
     );
 
-    uart_tx uart_tx_1 #(
+    uart_tx  #(
         .CLK_FREQ(CLK_FREQ),
         .BAUD_RATE(115200)
-    ) (
+    ) uart_tx_1(
         .clk(clk),
         .rst(rst),
         .tx_data(uart_t_data),
