@@ -41,7 +41,7 @@ module tb2;
     #2cs.dw = DB;
     #2 cs.dw = DH;
     // #2 cs.dw = DW;
-   	 #300 $finish();
+    #2000 $finish();
   end
 // always #1 
 // inital begin

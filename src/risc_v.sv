@@ -19,6 +19,7 @@ module risc_v (
       .addr (pc_addr),
       .instr(instr)
   );
+
   pipeline_unit pu1 (
       .clk(clk),
       .rst_n(rst_n),
@@ -29,6 +30,7 @@ module risc_v (
       .mem_write_data(mem_write_data),
       .cs_om(cs_m)
   );
+
   data_src data_mem(
       .clk(clk),
       .addr(mem_write_addr),
