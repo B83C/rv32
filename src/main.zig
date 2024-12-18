@@ -49,14 +49,20 @@ export fn _start() callconv(.Naked) noreturn {
     while (true) {}
 }
 
+fn delay() void {
+    var cnt: u32 = 0;
+    while (cnt < 1) cnt += 1;
+}
+
 fn main() noreturn {
-    // for ("Hello world!\n") |b| {
-    //     uart.* = b;
-    // }
-    while ((io_reg_read.uart.state & 0b100) > 0) {
-        io_reg_write.tx = 'C';
-        io_reg_write.ctrl = 4;
-        uart.* = 'A';
+    while (true) {
+        while ((io_reg_read.uart.state & 0b100) > 0) {
+            io_reg_write.ctrl = 0;
+            delay();
+            io_reg_write.tx = 'C';
+            delay();
+            io_reg_write.ctrl = 4;
+            uart.* = 'A';
+        }
     }
-    while (true) {}
 }

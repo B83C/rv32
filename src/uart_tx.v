@@ -20,12 +20,12 @@ module uart_tx#(
     reg [2:0] state;
     reg [2:0] next_state;
 
-    reg [7:0] cycle_cnt;
+    reg [10:0] cycle_cnt;
     reg [2:0] bit_cnt;
 
     reg tx_data_valid_r0;//将发送指令时钟同步
     reg tx_data_valid_r1;//发送指令延时一周期
-    wire tx_data_valid_posedge=tx_data_valid_r1&~tx_data_valid_r0;//上升沿发送数据
+    wire tx_data_valid_posedge=~tx_data_valid_r1&tx_data_valid_r0;//上升沿发送数据
 
     reg [7:0] tx_data_latch;
 
@@ -50,11 +50,11 @@ module uart_tx#(
 
     always@(posedge clk or posedge rst) begin
         if(rst) 
-            cycle_cnt <= 8'b0;
-        else if(next_state!=state||cycle_cnt==8'(CYCLE-1)&&state==SEND)
-            cycle_cnt <= 8'b0;
+            cycle_cnt <= 11'b0;
+        else if(next_state!=state||cycle_cnt==11'(CYCLE-1)&&state==SEND)
+            cycle_cnt <= 11'b0;
         else 
-            cycle_cnt <= cycle_cnt + 8'b1;
+            cycle_cnt <= cycle_cnt + 11'b1;
     end
 
     always@(posedge clk or posedge rst) begin
@@ -62,7 +62,7 @@ module uart_tx#(
             bit_cnt <= 3'b0;
         else if(next_state==SEND)
             bit_cnt <= 3'b0;
-        else if(cycle_cnt==8'(CYCLE-1)&&state==SEND)
+        else if(cycle_cnt==11'(CYCLE-1)&&state==SEND)
             bit_cnt <= bit_cnt + 3'b1;
 
     end
@@ -76,19 +76,19 @@ module uart_tx#(
                     next_state = IDLE;
                 end
             START: begin    //开始接收数据
-                if(cycle_cnt==8'(CYCLE-1))
+                if(cycle_cnt==11'(CYCLE-1))
                     next_state = SEND;
                 else 
                     next_state = START;
                 end
             SEND:begin
-                if(cycle_cnt==8'(CYCLE-1)&&bit_cnt==3'd7) //数据接收完成
+                if(cycle_cnt==11'(CYCLE-1)&&bit_cnt==3'd7) //数据接收完成
                     next_state = STOP;
                 else 
                     next_state = SEND;
                 end
             STOP:begin
-                if(cycle_cnt==8'(CYCLE-1))
+                if(cycle_cnt==11'(CYCLE-1))
                     next_state = IDLE;
                 else
                     next_state = STOP;
