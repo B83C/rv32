@@ -10,8 +10,8 @@ module mmio (
     output io_rw,
     input [31:0] mem_read_data,
     output mem_en,
-    input io_registers_r_raw io_r,
-    output io_registers_w_raw io_w
+    input io_registers_r io_r,
+    output io_registers_w io_w
 );
 
   localparam IO_START = 32'(128 * 1024);  //128*1024
@@ -24,14 +24,14 @@ module mmio (
 
   always @(posedge clk) begin
     if (!mem_en && cs.l && !io_rw) begin
-      io_read <= io_r[io_r_r_cnt'(addr[15:2])];
-      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[io_r_r_cnt'(addr[15:2])]);
+      io_read <= io_r[addr[15:2] * 32 +: 32];
+      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[addr[15:2] * 32 +: 32]);
     end
   end
 
   always @(negedge clk) begin
     if (!mem_en && cs.s && io_rw) begin
-      io_w[(io_r_w_cnt-1)'(addr[15:2])] <= wdata;
+      io_w[addr[15:2] * 32 +: 32] <= wdata;
       $display("[io] Writing to io_register at %h, data: %h", addr, wdata);
     end
   end

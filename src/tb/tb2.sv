@@ -11,46 +11,16 @@ module tb2;
 
   always #1 clk = ~clk;
 
-  logic io_rw;
-  io_registers_w_raw io_w;
-  io_registers_r_raw io_r;
+  logic uart_tx, uart_rx;
   
-  risc_v rv32(.clk(clk), .rst_n(rst_n),
-    .io_rw(io_rw),
-    .io_r(io_r),
-    .io_w(io_w)
+  risc_v rv32(.clk(clk), .rst_n(rst_n),.uart_tx(uart_tx), .uart_rx(uart_rx)
   );
   // data_mem dm(clk, addr, data2, cs, memory);
 
   initial begin
     $dumpfile("waveform.fst");
     $dumpvars(0, tb);
-    // cs.l = 0;
-    // cs.s = 1;
-    // cs.sign = 1;
-    // addr = 0;
-    // data2 = 32'h0102F3F4;
-    // #2 cs.dw = DB;
-    // #2 cs.dw = DH;
-    // #2 cs.dw = DW;
-    // #3 cs.l = 1;
-    // cs.s = 0;
-    // #2cs.dw = DB;
-    // #2 cs.dw = DH;
-    // #3 cs.l = 0;
-    // cs.s = 1;
-    // cs.sign = 0;
-    // addr = 0;
-    // data2 = 32'h0102F3F4;
-    // #2 cs.dw = DB;
-    // #2 cs.dw = DH;
-    // #2 cs.dw = DW;
-    // #3 cs.l = 1;
-    // cs.s = 0;
-    // #2cs.dw = DB;
-    // #2 cs.dw = DH;
-    // #2 cs.dw = DW;
-    #4000 $finish();
+    #1000 $finish();
   end
 // always #1 
 // inital begin

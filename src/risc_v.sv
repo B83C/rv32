@@ -4,11 +4,14 @@
 module risc_v (
     input clk,
     input rst_n,
+    input uart_rx, 
+    output uart_tx
     //io signals
-    output io_rw,
-    input io_registers_r_raw io_r,
-    output io_registers_w_raw io_w
 );
+
+  logic io_rw;
+  io_registers_r io_r;
+  io_registers_w io_w;
 
   wire [31:0] pc_addr;
   wire [31:0] instr;
@@ -19,6 +22,27 @@ module risc_v (
   wire mem_en;
 
   //io_signals 
+
+  uart_rx uart_rm (
+     .rx_data_valid(io_r.uart.state[0]),
+     .rx_data(io_r.uart.rx),
+     .rx(uart_rx),
+     .rx_ctrl(io_w.uart.ctrl[1:0]),
+     .rx_ready(io_r.uart.state[1]),
+     .clk(clk),
+     .rst(!rst_n)
+    );
+
+  uart_tx uart_wm (
+     .tx_data_valid(io_w.uart.ctrl[2]),
+     .tx_data(io_w.uart.tx),
+     .tx(uart_tx),
+     // .tx_ctrl(io_w.uart.ctrl[1:0]),
+     .tx_ready(io_r.uart.state[2]),
+
+     .clk(clk),
+     .rst(!rst_n)
+    );
 
   pipeline_unit pu1 (
       .clk(clk),
@@ -48,6 +72,7 @@ module risc_v (
       .clk(clk),
       .pc_addr(pc_addr),
       .instr(instr),
+
       .mem_en(mem_en),
       .addr(mem_write_addr),
       .wdata(mem_write_data),

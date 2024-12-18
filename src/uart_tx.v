@@ -1,9 +1,9 @@
+`timescale 1ns/1ps
+
 module uart_tx#(
         CLK_FREQ=100_000_000,
         BODE_RATE=115_200
     )(
-        
-
         output reg tx,
         output reg tx_ready,
         input tx_data_valid,
@@ -51,7 +51,7 @@ module uart_tx#(
     always@(posedge clk or posedge rst) begin
         if(rst) 
             cycle_cnt <= 8'b0;
-        else if(next_state!=state||cycle_cnt==CYCLE-1&&state==SEND)
+        else if(next_state!=state||cycle_cnt==8'(CYCLE-1)&&state==SEND)
             cycle_cnt <= 8'b0;
         else 
             cycle_cnt <= cycle_cnt + 8'b1;
@@ -62,7 +62,7 @@ module uart_tx#(
             bit_cnt <= 3'b0;
         else if(next_state==SEND)
             bit_cnt <= 3'b0;
-        else if(cycle_cnt==CYCLE-1&&state==SEND)
+        else if(cycle_cnt==8'(CYCLE-1)&&state==SEND)
             bit_cnt <= bit_cnt + 3'b1;
 
     end
@@ -76,19 +76,19 @@ module uart_tx#(
                     next_state = IDLE;
                 end
             START: begin    //开始接收数据
-                if(cycle_cnt==CYCLE-1)
+                if(cycle_cnt==8'(CYCLE-1))
                     next_state = SEND;
                 else 
                     next_state = START;
                 end
             SEND:begin
-                if(cycle_cnt==CYCLE-1&&bit_cnt==3'd7) //数据接收完成
+                if(cycle_cnt==8'(CYCLE-1)&&bit_cnt==3'd7) //数据接收完成
                     next_state = STOP;
                 else 
                     next_state = SEND;
                 end
             STOP:begin
-                if(cycle_cnt==CYCLE-1)
+                if(cycle_cnt==8'(CYCLE-1))
                     next_state = IDLE;
                 else
                     next_state = STOP;

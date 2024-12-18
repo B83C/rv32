@@ -32,8 +32,8 @@ module data_src (
     endcase
   endfunction
 
-  reg [(128 * 1024) - 1:0][7:0] data;
-  reg [7:0] unpacked_data [(128 * 1024) - 1:0];
+  logic [(128 * 1024) - 1:0][7:0] data;
+  logic [7:0] unpacked_data [(128 * 1024) - 1:0];
 
   assign instr = data[pc_addr +:4];
 

@@ -1,29 +1,31 @@
-const SYSCON_REG_ADDR: usize = (128 + 64) * 1024;
+const SYSCON_REG_ADDR: usize = (128 + 78) * 1024;
 const UART_BUF_REG_ADDR: usize = SYSCON_REG_ADDR + 4;
+
+const IO_REGISTER_READ: usize = (128) * 1024;
+const IO_REGISTER_WRITE: usize = (128 + 64) * 1024;
 
 const syscon: *volatile u32 = @ptrFromInt(SYSCON_REG_ADDR);
 const uart: *volatile u32 = @ptrFromInt(UART_BUF_REG_ADDR);
+
+const io_reg_write: *volatile u32 = @ptrFromInt(IO_REGISTER_READ);
+const io_reg_read: *volatile u32 = @ptrFromInt(IO_REGISTER_WRITE);
+const io_reg_read_1: *volatile uart_state = @ptrFromInt(IO_REGISTER_WRITE + 4);
 const std = @import("std");
 
-comptime {
-    asm (
-        \\.global _start
-        \\
-    );
-}
+const uart_state = packed struct {
+    rx: u8,
+    state: u8,
+    padding: u16,
+};
 
 export fn _start() callconv(.Naked) noreturn {
     asm volatile ("la sp, _sstack");
     asm volatile ("la s0, _sstack");
 
-    for ("Hello oeustnhaoeuworld!\n") |b| {
-        uart.* = b;
-    }
-    // tt();
-    uart.* = asm volatile (
+    asm volatile (
         \\ call %[func]
-        : [ret] "={a0}" (-> u32),
-        : [func] "i" (&tt),
+        :
+        : [func] "i" (&main),
         : "ra"
     );
     // @call(std.builtin.CallModifier.auto, tt, .{});
@@ -31,22 +33,12 @@ export fn _start() callconv(.Naked) noreturn {
     while (true) {}
 }
 
-fn tt() u32 {
-    var te: u32 = 0;
-    const t: u32 = 8;
-    te += 0x239487;
-    if (-63 < 63) {
-        te += 2;
+fn main() noreturn {
+    for ("Hello world!\n") |b| {
+        uart.* = b;
     }
-    asm volatile ("" ::: "memory");
-    te ^= 0x1010;
-    uart.* = 0x324;
-    asm volatile ("" ::: "memory");
-    te >>= 3;
-    te *= 0x87;
-    te *= t;
-    asm volatile ("" ::: "memory");
-    uart.* = te;
-    return te;
-    // asm volatile ("nop");
+    while ((io_reg_read_1.state >> 3) & 0b1 > 0) {
+        uart.* = 'A';
+    }
+    while (true) {}
 }

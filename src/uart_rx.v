@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module uart_rx#(
         CLK_FREQ=100_000_000,
         BODE_RATE=115_200
@@ -61,7 +63,7 @@ module uart_rx#(
     always@(posedge clk or posedge rst) begin
         if(rst) 
             cycle_cnt <= 8'b0;
-        else if(next_state!=state||cycle_cnt==CYCLE-1&&state==REC)
+        else if(next_state!=state||cycle_cnt==8'(CYCLE-1)&&state==REC)
             cycle_cnt <= 8'b0;
         else 
             cycle_cnt <= cycle_cnt + 8'b1;
@@ -72,7 +74,7 @@ module uart_rx#(
             bit_cnt <= 3'b0;
         else if(next_state==REC)
             bit_cnt <= 3'b0;
-        else if(cycle_cnt==CYCLE-1&&state==REC)
+        else if(cycle_cnt==8'(CYCLE-1)&&state==REC)
             bit_cnt <= bit_cnt + 3'b1;
 
     end
@@ -92,19 +94,19 @@ module uart_rx#(
                     next_state = IDLE;
                 end
             START: begin    //开始接收数据
-                if(cycle_cnt==CYCLE-1)
+                if(cycle_cnt==8'(CYCLE-1))
                     next_state = REC;
                 else 
                     next_state = START;
                 end
             REC:begin
-                if(cycle_cnt==CYCLE-1&&bit_cnt==3'd7) //数据接收完成
+                if(cycle_cnt==8'(CYCLE-1)&&bit_cnt==3'd7) //数据接收完成
                     next_state = STOP;
                 else 
                     next_state = REC;
                 end
             STOP:begin
-                if(cycle_cnt==CYCLE/2-1)
+                if(cycle_cnt==8'(CYCLE/2-1))
                     next_state = DATA;
                 else
                     next_state = STOP;
@@ -122,7 +124,7 @@ module uart_rx#(
     always@(posedge clk or posedge rst) begin
         if(rst)
             rx_data <= 8'b0;
-        else if(state==REC&&cycle_cnt==CYCLE/2-1)
+        else if(state==REC&&cycle_cnt==8'(CYCLE/2-1))
             rx_data[bit_cnt] <= rx;
     end
 
