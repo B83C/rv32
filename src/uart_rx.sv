@@ -8,7 +8,7 @@ module uart_rx #(
     output reg [7:0] rx_data,
     input rx,
     input [1:0] rx_ctrl,
-    output rx_ready,
+    output rx_ready,//connect to a led
 
     input clk,
     input rst
@@ -73,7 +73,7 @@ module uart_rx #(
   always @(posedge clk or posedge rst) begin
     if (rst) begin
       bit_cnt <= 3'b0;
-    end else if (next_state == REC) begin
+    end else if (next_state == REC&&next_state!=state) begin
       bit_cnt <= 3'b0;
     end else if (cycle_cnt == 8'(CYCLE - 1) && state == REC) begin
       bit_cnt <= bit_cnt + 3'b1;
@@ -88,16 +88,16 @@ module uart_rx #(
         else next_state = DISABLE;
       end
       IDLE: begin
-        if (rx == 1'b0)  //ä¸‹é™æ²¿å¼€å§‹é€šä¿¡
+        if (rx == 1'b0)  //ÏÂ½µÑØ¿ªÊ¼Í¨ÐÅ
           next_state = START;
         else next_state = IDLE;
       end
-      START: begin  //å¼€å§‹æŽ¥æ”¶æ•°æ®
+      START: begin  //¿ªÊ¼½ÓÊÕÊý¾Ý
         if (cycle_cnt == 8'(CYCLE - 1)) next_state = REC;
         else next_state = START;
       end
       REC: begin
-        if (cycle_cnt == 8'(CYCLE - 1) && bit_cnt == 3'd7)  //æ•°æ®æŽ¥æ”¶å®Œæˆ
+        if (cycle_cnt == 8'(CYCLE - 1) && bit_cnt == 3'd7)  //Êý¾Ý½ÓÊÕÍê³É
           next_state = STOP;
         else next_state = REC;
       end

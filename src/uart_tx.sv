@@ -23,9 +23,9 @@ module uart_tx#(
     reg [10:0] cycle_cnt;
     reg [2:0] bit_cnt;
 
-    reg tx_data_valid_r0;//½«·¢ËÍÖ¸ÁîÊ±ÖÓÍ¬²½
-    reg tx_data_valid_r1;//·¢ËÍÖ¸ÁîÑÓÊ±Ò»ÖÜÆÚ
-    wire tx_data_valid_posedge=~tx_data_valid_r1&tx_data_valid_r0;//ÉÏÉıÑØ·¢ËÍÊı¾İ
+    reg tx_data_valid_r0;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ê±ï¿½ï¿½Í¬ï¿½ï¿½
+    reg tx_data_valid_r1;//ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ê±Ò»ï¿½ï¿½ï¿½ï¿½
+    wire tx_data_valid_posedge=~tx_data_valid_r1&tx_data_valid_r0;//ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     reg [7:0] tx_data_latch;
 
@@ -60,7 +60,7 @@ module uart_tx#(
     always@(posedge clk or posedge rst) begin
         if(rst) 
             bit_cnt <= 3'b0;
-        else if(next_state==SEND)
+        else if(next_state==SEND&&next_state!=state)
             bit_cnt <= 3'b0;
         else if(cycle_cnt==11'(CYCLE-1)&&state==SEND)
             bit_cnt <= bit_cnt + 3'b1;
@@ -70,19 +70,19 @@ module uart_tx#(
     always@(*) begin
         case(state) 
             IDLE: begin
-                if(tx_data_valid_posedge) //ÏÂ½µÑØ¿ªÊ¼Í¨ĞÅ
+                if(tx_data_valid_posedge) //ï¿½Â½ï¿½ï¿½Ø¿ï¿½Ê¼Í¨ï¿½ï¿½
                     next_state = START;
                 else 
                     next_state = IDLE;
                 end
-            START: begin    //¿ªÊ¼½ÓÊÕÊı¾İ
+            START: begin    //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 if(cycle_cnt==11'(CYCLE-1))
                     next_state = SEND;
                 else 
                     next_state = START;
                 end
             SEND:begin
-                if(cycle_cnt==11'(CYCLE-1)&&bit_cnt==3'd7) //Êı¾İ½ÓÊÕÍê³É
+                if(cycle_cnt==11'(CYCLE-1)&&bit_cnt==3'd7) //ï¿½ï¿½ï¿½İ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                     next_state = STOP;
                 else 
                     next_state = SEND;
