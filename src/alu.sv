@@ -48,7 +48,7 @@ module alu (
           alu_result = {31'd0, overflow & add_result[31]};
         end
         SLTU: begin
-          alu_result = {31'd0, overflow};
+          alu_result = {31'd0, add_result[31]};
         end
         XOR: begin
           alu_result = alu_a ^ alu_b;

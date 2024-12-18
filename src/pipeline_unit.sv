@@ -5,14 +5,13 @@ module pipeline_unit (
     input clk,
     input rst_n,
     input [31:0] instr,
-    input [31:0] data_mem,
-    output [31:0] pc_addr,
+    input [31:0] mem_read_data,
     output [31:0] mem_write_addr,
     output [31:0] mem_write_data,
+    output [31:0] pc_addr,
     // data_width dw,
     output control_signals_t cs_om
 );
-
   wire stall_f, stall_d;
   wire flush_f, flush_d, flush_e;
   wire branch_hit;
@@ -53,13 +52,17 @@ module pipeline_unit (
   wire [31:0] alu_mux_input_1;
   wire [31:0] alu_mux_input_2;
   wire [31:0] alu_res, alu_res_m, alu_res_w;
-  rbuffer #($size(alu_res)) alu_res_bm (clk, 1, rst_n, alu_res, alu_res_m);
+  rbuffer #($size(alu_res), 2) alu_res_bm (clk, 2'b11, {2{rst_n}}, cs_e.m? mul_res :alu_res, {alu_res_m, alu_res_w});
 
   wire overflow, zero;
   // rbuffer #($size(alu_res)) alu_res_bw (clk, 1, rst_n, alu_res_m, alu_res_w);
 
-  wire [31:0] mul_res;
-  rbuffer #($size(mul_res)) mul_res_bw (clk, 1, rst_n, (cs_w.m)? mul_res: alu_res_m, alu_res_w);
+  wire [31:0] mul_res, mul_res_m;
+  // rbuffer #($size(mul_res)) mul_res_bw (clk, 1, rst_n, mul_res, mul_res_m);
+  // rbuffer #($size(alu_res_w)) alu_res_w_b (clk, 1, rst_n, (cs_m.m)? mul_res_m: alu_res_m, alu_res_w);
+
+  wire [31:0] mem_read_data_w;
+  rbuffer #($size(mem_read_data)) mem_read_data_bw (clk, 1, rst_n, mem_read_data, mem_read_data_w);
 
   wire [31:0] write_back;
 
@@ -95,13 +98,16 @@ module pipeline_unit (
 
   assign r1_mux = reg_mux(r1, r1_sel);
   assign r2_mux = reg_mux(r2, r2_sel);
+  // assign r1_mux = reg_mux(r1, r1_sel);
+  // assign r2_mux = reg_mux(r2, r2_sel);
 
   //Stage 3
 
   function logic[31:0] reg_e_mux(logic[31:0] rg, register_data_sel sel);
     case(sel)
       RAW: return rg;
-      MEM: return alu_res_m;
+      ALU: return alu_res_m;
+      MEM: return mem_read_data_w;
       default: return write_back; //Imply WB
     endcase
   endfunction
@@ -134,7 +140,8 @@ module pipeline_unit (
   );
 
   multiplier m_e (
-    .r1(r1_e),
+    .en(cs_e.m),
+    .r1(r1_e_mux),
     .r2(r2_e),
     .op(mul_op_t'(func3_e)),
     .rd(mul_res)
@@ -148,9 +155,17 @@ module pipeline_unit (
 
   //Stage 5
 
-  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? data_mem : alu_res_w;
+  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? mem_read_data : alu_res_w;
 
  //Misc
 
   hazard hz(rs1, rs2, rs1_e, rs2_e, rd_e, rd_m, rd_w, cs_e, cs_m, cs_w, branch_hit, r1_sel, r2_sel, r1_e_sel, r2_e_sel, stall_f, stall_d, flush_f, flush_d, flush_e);
+
+  always_comb begin
+    if(cs_e.j | branch_hit) begin
+      $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h(b) 0x%0h(j)", $time, cs_e.j, branch_hit, jmp_addr, alu_res);
+    end
+  end
+  initial begin
+  end
 endmodule

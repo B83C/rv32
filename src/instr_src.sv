@@ -6,13 +6,13 @@ module instr_src (
     output [31:0] instr
 );
   // reg [7:0] file [255:0];
-  reg [7:0] instr_mem[255:0];
+  reg [7:0] instr_mem[(128*1024) -1:0];
 
   integer file, r;
   initial begin
     file = $fopen("../zig-out/bin/rv32_fpga.bin", "rb");
     if (file != 0) begin
-      r = $fread(instr_mem, file, 0, 'h1024);  // Read raw binary data into memory
+      r = $fread(instr_mem, file, 0, 128*1024);  // Read raw binary data into memory
       $fclose(file);
     end else begin
       $fatal("Failed to open binary file.");

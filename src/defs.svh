@@ -82,4 +82,36 @@ typedef struct packed {
   logic m;
 } control_signals_t;
 
+typedef struct packed {
+  logic [7:0] tx;
+  logic [7:0] ctrl;
+  logic [15:0] padding;
+} uart_w;
+
+typedef struct packed {
+  logic [7:0] rx;
+  logic [7:0] state;
+  logic [15:0] padding;
+} uart_r;
+
+typedef struct packed {
+  logic [15:0] x;
+  logic [15:0] y;
+} vga_ctrl;
+
+//Field size is to be multiple of word size
+typedef struct packed {
+  logic [3:0][7:0] sseg;
+  uart_w uart;
+} io_registers_w;
+
+typedef struct packed {
+  uart_r uart;
+} io_registers_r;
+
+parameter io_r_w_cnt = $size(io_registers_w)/32;
+parameter io_r_r_cnt = $size(io_registers_r)/32;
+typedef logic [31:0]io_registers_w_raw[io_r_w_cnt - 1:0];
+typedef logic [31:0]io_registers_r_raw[io_r_r_cnt - 1:0];
+
 `endif

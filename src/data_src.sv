@@ -4,11 +4,14 @@
 //Named it source instead of memory so change of name is not needed when cache is implemented
 module data_src (
     input clk,
+    input [31:0] pc_addr,
+    output [31:0] instr,
+
     input mem_en,
     input [31:0] addr,
     input [31:0] wdata,
     input control_signals_t cs,
-    output reg [31:0] memory
+    output logic [31:0] memory
 );
 
   function [31:0] mask(data_width dw);
@@ -29,20 +32,22 @@ module data_src (
     endcase
   endfunction
 
-  reg ['h4096:0][7:0] data;
-  reg [7:0] unpacked_data ['h4096:0];
+  reg [(128 * 1024) - 1:0][7:0] data;
+  reg [7:0] unpacked_data [(128 * 1024) - 1:0];
+
+  assign instr = data[pc_addr +:4];
 
   always @(posedge clk) begin
-    if(cs.l && mem_en) begin
+    if(cs.l&&mem_en) begin
       memory <= {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign_ex & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))}; //TODO: Clean up
-      $display("Loading from memory at %h, data: %h", addr, {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign_ex & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))});
+      $display("[%0t] Mem Load %h, data: %h", $time, addr, {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign_ex & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))});
     end   
   end
 
   //Little endian
   always @(negedge clk) begin
     if (cs.s&&mem_en) begin
-      $display("Storing to memory at %h, data: %h", addr, {>>8{wdata & mask(data_width'(cs.dw))}});
+      $display("[%0t] Mem Write %h, data: %h", $time, addr, {>>8{wdata & mask(data_width'(cs.dw))}});
       data[addr +:4] <= {>>8{wdata & mask(data_width'(cs.dw))}};
     end
   end
@@ -51,7 +56,7 @@ module data_src (
   initial begin
     file = $fopen("../zig-out/bin/rv32_fpga.bin", "rb");
     if (file != 0) begin
-      r = $fread(unpacked_data, file, 0, 'h2048);  // Read raw binary data into memory
+      r = $fread(unpacked_data, file, 0, 128 * 1024);  // Read raw binary data into memory
       data = {<<8{unpacked_data}};
       $fclose(file);
     end else begin

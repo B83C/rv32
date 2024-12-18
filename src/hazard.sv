@@ -17,10 +17,10 @@ module hazard (
      ALU:(cs_w.w && (rs2 == rd_w))?
      WB: RAW;
   assign r1_e_sel = (cs_m.w && (rs1_e == rd_m))?
-     MEM: (cs_w.w && (rs1_e == rd_w))?
+     ALU : (cs_w.w && (rs1_e == rd_w))?
      WB: RAW;
   assign r2_e_sel = (cs_m.w && (rs2_e == rd_m))?
-     MEM: (cs_w.w && (rs2_e == rd_w))?
+     ALU : (cs_w.w && (rs2_e == rd_w))?
      WB: RAW;
   
   // assign stall_f = 0;
@@ -34,7 +34,7 @@ module hazard (
   assign flush_e = flush_d & !stall_d;
   // assign flush_e = flush_f;
 
-  assign stall_d = (cs_e.l && (rd_e == rs2) && rd_e != 0);
+  assign stall_d = (cs_e.l && (rd_e == rs2 | rd_e == rs1) && rd_e != 0);
   assign stall_f = stall_d;
   // assign stall_f=cs_m.j||cs_m.b||cs_m.m;//有跳转，分支，乘除，流水线暂停
   // assign stall_d=stall_f||(cs_w.w && (rs1_e == rd_w || rs2_e == rd_w));//有写回，暂停

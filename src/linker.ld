@@ -1,10 +1,10 @@
 MEMORY {
-  PROG : ORIGIN = 0x0, LENGTH = 0x1024
-  DATA : ORIGIN = 0x1024, LENGTH = 0x800
-  STACK : ORIGIN = 0x1824, LENGTH = 4K
+  PROG : ORIGIN = 0x0, LENGTH = 64K
+  DATA : ORIGIN = 64K, LENGTH = 32K
+  STACK : ORIGIN = 96K, LENGTH = 32K
 }
 
-__stack_size = 4K;
+__stack_size = 32K;
 
 ENTRY(_start)
 

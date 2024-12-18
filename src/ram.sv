@@ -8,7 +8,8 @@ module ram(
   input [4096-1:0] wdata,
   output logic [4096-1:0] rdata
 );
-  logic [128*1024 / 4096 - 1: 0][4096 - 1 :0] ram;
+  reg [(128 * 1024) - 1:0][7:0] data;
+  reg [7:0] unpacked_data [(128 * 1024) - 1:0];
 
   always @(posedge rclk) begin
     rdata <= ram[raddr];
