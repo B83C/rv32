@@ -7,11 +7,16 @@ const IO_REGISTER_WRITE: usize = (128 + 64) * 1024;
 const syscon: *volatile u32 = @ptrFromInt(SYSCON_REG_ADDR);
 const uart: *volatile u32 = @ptrFromInt(UART_BUF_REG_ADDR);
 
-const io_reg_write: *volatile uart_w_state = @ptrFromInt(IO_REGISTER_WRITE);
+const io_reg_write: *volatile io_w = @ptrFromInt(IO_REGISTER_WRITE);
 const io_reg_read: *volatile io_r = @ptrFromInt(IO_REGISTER_READ);
 
 const io_r = packed struct {
     uart: uart_r_state,
+    gpio: gpio_state,
+};
+
+const io_w = packed struct {
+    uart: uart_w_state,
     gpio: gpio_state,
     sseg: *[4]u8,
 };
@@ -19,7 +24,7 @@ const io_r = packed struct {
 const gpio_state = packed struct {
     JC: u8,
     JB: u8,
-    padding: u16,
+    leds: u16,
 };
 
 const uart_r_state = packed struct {

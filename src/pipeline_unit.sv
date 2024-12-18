@@ -30,12 +30,12 @@ module pipeline_unit (
   wire [4:0] rd, rd_e, rd_m, rd_w;
   rbuffer #($size(rd), 3) rd_b (clk, 3'b111, {flush_e, {2{1'b1}}} & {3{rst_n}}, rd, {rd_e, rd_m, rd_w});
 
+  wire [31:0] r1_mux, r2_mux, r1_e_mux, r2_e_mux, r2_e_mux_m;
   wire [31:0] r1, r1_e;
   rbuffer #($size(r1)) r1_be (clk, 1, rst_n, r1_mux, r1_e);
   wire [31:0] r2, r2_e;
   rbuffer #($size(r2)) r2_be (clk, 1, rst_n, r2_mux, r2_e);
 
-  wire [31:0] r1_mux, r2_mux, r1_e_mux, r2_e_mux, r2_e_mux_m;
   rbuffer #($size(r2_e_mux)) r2_e_mux_bm (clk, 1, rst_n, r2_e_mux, r2_e_mux_m);
 
   wire [31:0] imm, imm_e;
@@ -49,6 +49,7 @@ module pipeline_unit (
   control_signals_t cs, cs_e, cs_m, cs_w;
   rbuffer #($size(control_signals_t), 3) cs_b (clk, 3'b111, {flush_e, {2{1'b1}}} & {3{rst_n}}, cs, {cs_e, cs_m, cs_w});
 
+  wire [31:0] mul_res, mul_res_m;
   wire [31:0] alu_mux_input_1;
   wire [31:0] alu_mux_input_2;
   wire [31:0] alu_res, alu_res_m, alu_res_w;
@@ -57,7 +58,6 @@ module pipeline_unit (
   wire overflow, zero;
   // rbuffer #($size(alu_res)) alu_res_bw (clk, 1, rst_n, alu_res_m, alu_res_w);
 
-  wire [31:0] mul_res, mul_res_m;
   // rbuffer #($size(mul_res)) mul_res_bw (clk, 1, rst_n, mul_res, mul_res_m);
   // rbuffer #($size(alu_res_w)) alu_res_w_b (clk, 1, rst_n, (cs_m.m)? mul_res_m: alu_res_m, alu_res_w);
 

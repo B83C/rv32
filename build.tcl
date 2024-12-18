@@ -16,7 +16,7 @@ set opt_checkpoint "$checkpoints_dir/post_opt.dcp"
 set place_checkpoint "$checkpoints_dir/post_place.dcp"
 set route_checkpoint "$checkpoints_dir/post_route.dcp"
 
-set source_files [concat [glob -nocomplain $src_dir/*.sv] [glob -nocomplain $src_dir/*.svh] [glob -nocomplain $src_dir/*.v] [glob -nocomplain $src_dir/*.vhdl] [glob $src_dir/xdc/*.xdc] [glob $ips_dir/*/*.xci]]
+set source_files [concat [glob -nocomplain $src_dir/*.sv] [glob -nocomplain $src_dir/*.svh] [glob -nocomplain $src_dir/*.v] [glob -nocomplain $src_dir/*.vhdl] [glob -nocomplain $src_dir/xdc/*.xdc] [glob -nocomplain $ips_dir/*/*.xci]]
 
 proc files_changed {files checkpoints} {
     foreach file $files {

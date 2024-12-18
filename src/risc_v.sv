@@ -4,6 +4,8 @@
 module risc_v (
     input clk,
     input rst_n,
+    output [7:0]JB,
+    output [7:0]JC,
     input uart_rx, 
     output uart_tx
     //io signals
@@ -22,6 +24,15 @@ module risc_v (
   wire mem_en;
 
   //io_signals 
+
+  // assign io_r.gpio.JB = JB;
+  gpio gpio_rm (
+    .JB(io_r.gpio.JB),
+    .JC(io_r.gpio.JC),
+    .JB_o(JB),
+    .JC_o(JC)
+  );
+
 
   uart_rx uart_rm (
      .rx_data_valid(io_r.uart.state[0]),

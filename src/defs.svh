@@ -100,7 +100,7 @@ typedef struct packed {
 } vga_ctrl;
 
 typedef struct packed {
-  logic [15:0] padding;
+  logic [15:0] leds;
   logic [7:0] JB;
   logic [7:0] JC;
 } gpio;
@@ -114,6 +114,7 @@ typedef struct packed {
 
 typedef struct packed {
   uart_r uart;
+  gpio gpio;
 } io_registers_r;
 
 function [31:0] mask(data_width dw);
