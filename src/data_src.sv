@@ -14,30 +14,13 @@ module data_src (
     output logic [31:0] memory
 );
 
-  function [31:0] mask(data_width dw);
-    case(dw) 
-      DB: return {24'd0, {8{1'b1}}};
-      DH: return {16'd0, {16{1'b1}}};
-      DW: return {32{1'b1}};
-      default: return 0;
-    endcase
-  endfunction
-
-  function get_msb(data_width dw, logic[31:0] r);
-    case(dw) 
-      DB: return r[7];
-      DH: return r[15];
-      DW: return r[31];
-      default: return 0;
-    endcase
-  endfunction
 
   logic [(128 * 1024) - 1:0][7:0] data;
   logic [7:0] unpacked_data [(128 * 1024) - 1:0];
 
   assign instr = data[pc_addr +:4];
 
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     if(cs.l&&mem_en) begin
       memory <= {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign_ex & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))}; //TODO: Clean up
       $display("[%0t] Mem Load %h, data: %h", $time, addr, {data[addr +:4]}& mask(data_width'(cs.dw)) | {{32{cs.sign_ex & get_msb(data_width'(cs.dw), data[addr +:4])}} & ~mask(data_width'(cs.dw))});

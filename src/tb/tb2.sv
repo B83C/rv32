@@ -20,7 +20,7 @@ module tb2;
   initial begin
     $dumpfile("waveform.fst");
     $dumpvars(0, tb);
-    #1000 $finish();
+    #10000 $finish();
   end
 // always #1 
 // inital begin

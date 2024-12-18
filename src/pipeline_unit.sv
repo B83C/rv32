@@ -155,7 +155,7 @@ module pipeline_unit (
 
   //Stage 5
 
-  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? mem_read_data : alu_res_w;
+  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? mem_read_data_w : alu_res_w;
 
  //Misc
 

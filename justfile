@@ -22,6 +22,9 @@ cmd:
 update_ip:
      {{ vivado }} -nolog -nojournal -mode tcl -source  update_ip.tcl 
 
+zig:
+    zig build
+
 # /home/b83c/tools/Xilinx/Vivado/2024.1/bin/vivado -nolog -nojournal -mode batch -notrace -quiet -source  build.tcl 
 
 upload: 

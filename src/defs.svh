@@ -63,7 +63,7 @@ typedef enum logic[1:0] {
   DW = 0,
   DH,
   DB
-} data_width ;
+} data_width;
 
 typedef struct packed {
   //RV32I
@@ -83,15 +83,15 @@ typedef struct packed {
 } control_signals_t;
 
 typedef struct packed {
-  logic [7:0] tx;
-  logic [7:0] ctrl;
   logic [15:0] padding;
+  logic [7:0] ctrl;
+  logic [7:0] tx;
 } uart_w;
 
 typedef struct packed {
-  logic [7:0] rx;
-  logic [7:0] state;
   logic [15:0] padding;
+  logic [7:0] state;
+  logic [7:0] rx;
 } uart_r;
 
 typedef struct packed {
@@ -99,9 +99,16 @@ typedef struct packed {
   logic [15:0] y;
 } vga_ctrl;
 
+typedef struct packed {
+  logic [15:0] padding;
+  logic [7:0] JB;
+  logic [7:0] JC;
+} gpio;
+
 //Field size is to be multiple of word size
 typedef struct packed {
   logic [3:0][7:0] sseg;
+  gpio gpio;
   uart_w uart;
 } io_registers_w;
 
@@ -109,9 +116,22 @@ typedef struct packed {
   uart_r uart;
 } io_registers_r;
 
-parameter io_r_w_cnt = $size(io_registers_w)/32;
-parameter io_r_r_cnt = $size(io_registers_r)/32;
-typedef logic [31:0]io_registers_w_raw[io_r_w_cnt - 1:0];
-typedef logic [31:0]io_registers_r_raw[io_r_r_cnt - 1:0];
+function [31:0] mask(data_width dw);
+  case(dw) 
+    DB: return {24'd0, {8{1'b1}}};
+    DH: return {16'd0, {16{1'b1}}};
+    DW: return {32{1'b1}};
+    default: return 0;
+  endcase
+endfunction
+
+function get_msb(data_width dw, logic[31:0] r);
+  case(dw) 
+    DB: return r[7];
+    DH: return r[15];
+    DW: return r[31];
+    default: return 0;
+  endcase
+endfunction
 
 `endif

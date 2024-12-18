@@ -22,16 +22,16 @@ module mmio (
 
   logic [31:0] io_read;
 
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     if (!mem_en && cs.l && !io_rw) begin
-      io_read <= io_r[addr[15:2] * 32 +: 32];
-      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[addr[15:2] * 32 +: 32]);
+      io_read <= io_r[addr[15:0] * 8 +: 32] & mask(data_width'(cs.dw));
+      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[addr[15:0] * 8 +: 32]& mask(data_width'(cs.dw)));
     end
   end
 
   always @(negedge clk) begin
     if (!mem_en && cs.s && io_rw) begin
-      io_w[addr[15:2] * 32 +: 32] <= wdata;
+      io_w[addr[15:0] * 8 +: 32] <= (io_w[addr[15:0] * 8 +: 32] & ~mask(data_width'(cs.dw))) | {wdata & mask(data_width'(cs.dw))};
       $display("[io] Writing to io_register at %h, data: %h", addr, wdata);
     end
   end
