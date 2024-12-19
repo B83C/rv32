@@ -4,6 +4,7 @@
 `define IR_WIDTH 32
 `define IR_ADDR_WIDTH $clog2(IR_WIDTH)
 
+parameter MEM_ADDR_WIDTH = $clog2(128 * 1024 / 4);
 parameter XLEN = 32;
 
 typedef struct packed {
@@ -114,7 +115,7 @@ typedef struct packed {
 
 typedef struct packed {
   uart_r uart;
-  gpio gpio;
+  gpio gpio_b;
 } io_registers_r;
 
 function [31:0] mask(data_width dw);
@@ -126,6 +127,15 @@ function [31:0] mask(data_width dw);
   endcase
 endfunction
 
+function [32 / 8  - 1:0] maskb(data_width dw);
+  case(dw) 
+    DB: return 'b0001;
+    DH: return 'b0011;
+    DW: return 'b1111;
+    default: return 0;
+  endcase
+endfunction
+
 function get_msb(data_width dw, logic[31:0] r);
   case(dw) 
     DB: return r[7];
@@ -133,6 +143,19 @@ function get_msb(data_width dw, logic[31:0] r);
     DW: return r[31];
     default: return 0;
   endcase
+endfunction
+
+//Big to little endian
+function [31:0] le(logic [31:0] r);
+  return {<<8{r}};
+endfunction
+
+function [63:0] le32(logic [63:0] r);
+  return {<<32{r}};
+endfunction
+
+function [31:0] be(logic [31:0] r);
+  return {<<8{r}};
 endfunction
 
 `endif

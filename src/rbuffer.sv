@@ -10,7 +10,7 @@ module rbuffer #(parameter Nbits = 32, parameter RLen= 1)(
   genvar i;
   generate
     for(i = RLen - 1; i >= 0; i--) begin
-      always @(posedge clk, negedge rst_n) begin
+      always @(posedge clk) begin
         if(!rst_n[i]) begin
           out[i] <= 0;
         end else if (en[i]) begin

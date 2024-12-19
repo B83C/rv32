@@ -11,8 +11,8 @@ const io_reg_write: *volatile io_w = @ptrFromInt(IO_REGISTER_WRITE);
 const io_reg_read: *volatile io_r = @ptrFromInt(IO_REGISTER_READ);
 
 const io_r = packed struct {
-    uart: uart_r_state,
     gpio: gpio_state,
+    uart: uart_r_state,
 };
 
 const io_w = packed struct {
@@ -60,13 +60,16 @@ fn delay() void {
 }
 
 fn main() noreturn {
+    for ("Hello world\n") |b| {
+        uart.* = b;
+    }
     while (true) {
         while ((io_reg_read.uart.state & 0b100) > 0) {
-            io_reg_write.ctrl = 0;
+            io_reg_write.uart.ctrl = 0;
             delay();
-            io_reg_write.tx = 'C';
+            io_reg_write.uart.tx = 'C';
             delay();
-            io_reg_write.ctrl = 4;
+            io_reg_write.uart.ctrl = 4;
             uart.* = 'A';
         }
     }
