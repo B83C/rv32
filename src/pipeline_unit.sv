@@ -57,6 +57,8 @@ module pipeline_unit (
   rbuffer #($size(alu_res), 2) alu_res_bm (clk, 2'b11, {2{rst_n}}, cs_e.m? mul_res :alu_res, {alu_res_m, alu_res_w});
 
   wire overflow, zero;
+
+  wire mul_busy;
   // rbuffer #($size(alu_res)) alu_res_bw (clk, 1'b1, rst_n, alu_res_m, alu_res_w);
 
   // rbuffer #($size(mul_res)) mul_res_bw (clk, 1'b1, rst_n, mul_res, mul_res_m);
@@ -74,8 +76,7 @@ module pipeline_unit (
 
   //Stage 2
 
-
-  ir_dec_ctrl ir_dec (.ir(instr_d), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
+  ir_dec_ctrl ir_dec (.clk(clk), .ir(instr_d), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
 
   registers reg_file (
       .clk(clk),
@@ -141,8 +142,10 @@ module pipeline_unit (
   );
 
   multiplier m_e (
+    .clk_n(clk),
     .en(cs_e.m),
-    .r1(r1_e_mux),
+    .r1(r1_e),
+    // .busy(m_busy),
     .r2(r2_e),
     .op(mul_op_t'(func3_e)),
     .rd(mul_res)
