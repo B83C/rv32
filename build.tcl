@@ -1,3 +1,7 @@
+set script_dir [file dirname [file normalize [info script]]]
+cd $script_dir
+puts $script_dir
+
 source init.tcl 
 
 cd $working_dir

@@ -9,3 +9,6 @@ set checkpoints_dir $working_dir/checkpoints
 set src_dir $root_dir/src
 set ips_dir $root_dir/ips
 
+set script_dir [file dirname [file normalize [info script]]]
+cd $script_dir
+puts $script_dir
