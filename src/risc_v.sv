@@ -85,6 +85,7 @@ module risc_v (
   data_src data_mem (
       .clk(clk),
       .pc_addr(pc_addr),
+      .read_instr(1),
       .instr(instr),
       .instr_ready(instr_ready),
 

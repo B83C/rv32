@@ -4,7 +4,8 @@
 module data_src (
     input clk,
     input [31:0] pc_addr,
-    output [31:0] instr,
+    input read_instr,
+    output logic [31:0] instr,
     output reg instr_ready,
 
     input mem_en,
@@ -18,9 +19,15 @@ module data_src (
   logic [7:0] b_en;
   logic [63:0] wdata_e; 
   wire [31:0] rdata_e; 
-  logic [63:0] instr_r;
 
-  assign instr = le(instr_r[(!pc_addr[2])*32 +: 32]);
+  logic instr_sel;
+  logic [63:0] ram_instr;
+
+  always @(negedge clk) begin
+    instr_sel <= !pc_addr[2];
+  end
+
+  assign instr = le(ram_instr[instr_sel*32 +: 32]);
   assign b_en = {<<1{{4'd0, maskb(data_width'(cs.dw))} << (addr % 8)}};
   assign wdata_e = {<<8{64'(wdata) << ((addr % 8) * 8)}};
   assign rdata_e = 32'({<<8{read_mem << ((addr % 8) * 8)}});
@@ -45,9 +52,9 @@ module data_src (
   // assign instr_ready = 1;
   dual_port_ram dpr (
     .clka(clk) /* synthesis syn_isclock = 1 */,
-    .ena(1),
+    .ena(read_instr),
     .addra(14'(pc_addr/8)),
-    .douta(instr_r),
+    .douta(ram_instr),
     .readya(instr_ready),
 
     .clkb(clk) /* synthesis syn_isclock = 1 */,

@@ -1,6 +1,6 @@
 set shell := ["/sbin/nu", "-c"]
 
-vivado := "/home/b83c/tools/Xilinx/Vivado/2024.1/bin/vivado"
+vivado := "/home/b83c/tools/Xilinx/Vivado/2024.2/bin/vivado"
 
 sim testbench="tb" show_wave="n":
     mkdir sim

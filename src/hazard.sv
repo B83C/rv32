@@ -6,17 +6,11 @@ module hazard (
   input control_signals_t cs_e, cs_m, cs_w, 
   input branch_hit,
   input instr_ready,
-  output register_data_sel r1_sel, r2_sel, r1_e_sel, r2_e_sel,
+  output register_data_sel r1_e_sel, r2_e_sel,
   output logic stall_f, stall_d,
   output logic flush_f, flush_d, flush_e 
 );
 
-  assign r1_sel = (cs_e.w && (rs1 == rd_e))?
-     ALU:(cs_w.w && (rs1 == rd_w))?
-     WB: RAW;
-  assign r2_sel = (cs_e.w && (rs2 == rd_e))?
-     ALU:(cs_w.w && (rs2 == rd_w))?
-     WB: RAW;
   assign r1_e_sel = (cs_m.w && (rs1_e == rd_m))?
      ALU : (cs_w.w && (rs1_e == rd_w))?
      WB: RAW;

@@ -14,7 +14,7 @@ module registers (
   reg [31:0][31:0]regs;
 
   //Synched writes
-  always @(posedge clk or negedge rst_n) begin
+  always @(negedge clk or negedge rst_n) begin
     if (~rst_n) regs <= 0;
     else if (w_en & (rd != 0)) begin
       $display("Writing to register: %h, Data: %h", rd, w_data);
