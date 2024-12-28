@@ -5,168 +5,172 @@ module pipeline_unit (
     input clk,
     input rst_n,
     input [31:0] instr,
-    input instr_ready, 
+    input instr_ready,
     input [31:0] mem_read_data,
     output [31:0] mem_write_addr,
     output [31:0] mem_write_data,
     output [31:0] pc_addr,
     // data_width dw,
-    output control_signals_t cs_om
+    output control_signals_t cs_oe
 );
-  wire stall_f, stall_d, stall_e;
-  wire flush_f, flush_d, flush_e;
-  wire branch_hit;
-  wire [31:0] jmp_addr;
- 
-  wire [31:0] pc, pc_f, pc_d, pc_e, pc_m, pc_w;
-  rbuffer #($size(pc), 5) pc_ra (clk, rst_n, {1'b1, !stall_f, !stall_d, !stall_e, {2{1'b1}}}, {flush_f, flush_d, flush_e, 2'b11}, pc, {pc_f, pc_d, pc_e, pc_m, pc_w});
+  pipeline_i p (clk);
 
-  register_data_sel r1_e_sel, r2_e_sel;
-  wire [4:0] rs1, rs1_e;
-  wire [4:0] rs2, rs2_e;
-  rbuffer #($size(rs1)) rs (clk, rst_n, 'b11, 'b1, rs1, rs1_e);
-  rbuffer #($size(rs2)) rs2_be (clk, rst_n, 'b11, 'b1, rs2, rs2_e);
+  assign p.flush_f = 0;
+  assign p.flush_d = (p.cs_e.j | (p.cs_e.b & p.branch_hit));
+  // assign p.flush_e = p.flush_d;
 
-  wire [4:0] rd, rd_e, rd_m, rd_w;
-  rbuffer #($size(rd), 3) rd_b (clk, rst_n, 'b1111, {flush_e, {2{1'b1}}}, rd, {rd_e, rd_m, rd_w});
+  assign p.stall_d = !instr_ready | (p.cs_e.j | (p.cs_e.b & p.branch_hit)) | (p.cs.a && p.cs_e.l && (p.rd_e == p.rs2 | p.rd_e == p.rs1) && p.rd_e != 0);
+  assign p.stall_f = 0;
 
-  wire [31:0] r1_e_mux, r2_e_mux, r2_e_mux_m;
-  wire [31:0] r1, r1_e;
-  rbuffer #($size(r1)) r1_be (clk, rst_n, 'b11, 'b1, r1, r1_e);
-  wire [31:0] r2, r2_e;
-  rbuffer #($size(r2)) r2_be (clk, rst_n, 'b11, 'b1, r2, r2_e);
-
-  rbuffer #($size(r2_e_mux)) r2_e_mux_bm (clk, rst_n, 'b11, 'b1, r2_e_mux, r2_e_mux_m);
-
-  wire [31:0] imm, imm_e;
-  rbuffer #($size(imm)) imm_be (clk, rst_n, 'b11, 'b1, imm, imm_e);
-
-  wire [2:0] func3, func3_e;
-  rbuffer #($size(func3)) func3_be (clk, rst_n, 'b11, 'b1, func3, func3_e);
-  wire [1:0] alu_src_sel, alu_src_sel_e;
-  rbuffer #($size(alu_src_sel)) alu_src_sel_be (clk, rst_n, 'b11, 'b1, alu_src_sel, alu_src_sel_e);
-
-  control_signals_t cs, cs_e, cs_m, cs_w;
-  rbuffer #($size(control_signals_t), 3) cs_b (clk, rst_n, 4'b1111, {flush_e, {2{1'b1}}}, cs, {cs_e, cs_m, cs_w});
-
-  wire [31:0] mul_res, mul_res_m;
-  wire [31:0] alu_mux_input_1;
-  wire [31:0] alu_mux_input_2;
-  wire [31:0] alu_res, alu_res_m, alu_res_w;
-  rbuffer #($size(alu_res), 2) alu_res_bm (clk, rst_n, 'b111, 'b11, cs_e.m? mul_res :alu_res, {alu_res_m, alu_res_w});
-
-  wire overflow, zero;
-
-  wire mul_busy;
-  // rbuffer #($size(alu_res)) alu_res_bw (clk, rst_n, 1'b1, rst_n, alu_res_m, alu_res_w);
-
-  // rbuffer #($size(mul_res)) mul_res_bw (clk, rst_n, 1'b1, rst_n, mul_res, mul_res_m);
-  // rbuffer #($size(alu_res_w)) alu_res_w_b (clk, rst_n, 1'b1, rst_n, (cs_m.m)? mul_res_m: alu_res_m, alu_res_w);
-
-  wire [31:0] mem_read_data_w;
-  rbuffer #($size(mem_read_data)) mem_read_data_bw (clk, rst_n, 'b11, 'b1, mem_read_data, mem_read_data_w);
+  logic [31:0] u;
+  parameter N_STREAMS = 14;
+  parameter integer start_pos[N_STREAMS- 1:0] = '{0: 4, 10: 0, 11: 3, 12: 3, 13: 1, default: 2};
+  // logic [N_STREAMS-1:0][6-2:0][XLEN-1:0] stream = ;
+  rbuffer_p #(
+      .MRLen (6),
+      .Nitems(N_STREAMS),
+      .start (start_pos)
+  ) buffer_stream (
+      .clk(clk),
+      .grst_n(rst_n),
+      .stall('{0: p.stall_f, 1: p.stall_d, 2: p.stall_e, default: 1'b0}),
+      .flush('{0: p.flush_f, 1: p.flush_d, 2: p.flush_e, default: 1'b0}),
+      .in({
+        32'(instr),
+        32'(p.r2_e_mux),
+        32'(p.alu_res),
+        32'(p.pc),
+        32'(p.rs1),
+        32'(p.rs2),
+        32'(p.rd),
+        32'(p.cs),
+        32'(p.r1),
+        32'(p.r2),
+        32'(p.imm),
+        32'(p.func3),
+        32'(p.alu_src_sel),
+        32'(mem_read_data)
+      }),
+      .stream({
+    {u, 32'(p.instr_d), u, u, u},
+    {u, u, u, 32'(p.r2_e_mux_m), u},
+    {u, u, u, 32'(p.alu_res_m), u},
+    {32'(p.pc_f), 32'(p.pc_d), 32'(p.pc_e), 32'(p.pc_m), 32'(p.pc_w)},
+    {u, u, 32'(p.rs1_e), u, u},
+    {u, u, 32'(p.rs2_e), u, u},
+    {u, u, 32'(p.rd_e), 32'(p.rd_m), u},
+    {u, u, 32'(p.cs_e), 32'(p.cs_m), 32'(p.cs_w)},
+    {u, u, 32'(p.r1_e), u, u},
+    {u, u, 32'(p.r2_e), u, u},
+    {u, u, 32'(p.imm_e), u, u},
+    {u, u, 32'(p.func3_e), u, u},
+    {u, u, 32'(p.alu_src_sel_e), u, u},
+    {u, u, u, u, 32'(p.mem_read_data_w)}
+  })
+  );
 
   wire [31:0] write_back;
 
   //Stage 1
-  
-  assign pc_addr = pc_f;
-  assign pc = (cs_e.j)? alu_res: (cs_e.b && branch_hit)? jmp_addr : pc_f + 4;
+
+  assign pc_addr = p.pc;
+  assign p.pc = (p.cs_e.j)? p.alu_res: (p.cs_e.b && p.branch_hit)? p.jmp_addr : instr_ready? p.pc_f + 4:PC_START_ADDR;
 
   //Stage 2
 
-  ir_dec_ctrl ir_dec (.clk(clk), .en(flush_d), .ir(instr), .cs(cs), .rs1(rs1), .rs2(rs2), .rd(rd), .imm(imm),.func3(func3), .alu_src_sel(alu_src_sel));
+  ir_dec_ctrl ir_dec (p.ir_dec);
 
   registers reg_file (
       .clk(clk),
       .rst_n(rst_n),
-      .w_en(cs_w.w),
-      .rs1(rs1),
-      .rs2(rs2),
-      .rd(rd_w),
+      .w_en(p.cs_m.w),
+      .rs1(p.rs1),
+      .rs2(p.rs2),
+      .rd(p.rd_m),
       .w_data(write_back),
-      .rd_data1(r1),
-      .rd_data2(r2)
-  ); 
+      .rd_data1(p.r1),
+      .rd_data2(p.r2)
+  );
 
-  function logic[31:0] reg_mux(logic[31:0] rg, register_data_sel sel);
-    case(sel)
-      RAW: return rg;
-      ALU: return alu_res; //TODO Overlapped with reg_e_mux
-      default: return write_back; //Imply WB
-    endcase
-  endfunction
+  // function logic[31:0] reg_mux(logic[31:0] rg, register_data_sel sel);
+  //   case(sel)
+  //     RAW: return rg;
+  //     ALU: return p.alu_res; //TODO Overlapped with reg_e_mux
+  //     default: return write_back; //Imply WB
+  //   endcase
+  // endfunction
 
-  // assign r1_mux = reg_mux(r1, r1_sel);
-  // assign r2_mux = reg_mux(r2, r2_sel);
+  // assign p.r1_mux = reg_mux(p.r1, p.r1_sel);
+  // assign p.r2_mux = reg_mux(p.r2, p.r2_sel);
 
   //Stage 3
 
-  function logic[31:0] reg_e_mux(logic[31:0] rg, register_data_sel sel);
-    case(sel)
-      RAW: return rg;
-      ALU: return alu_res_m;
-      MEM: return mem_read_data_w;
-      default: return write_back; //Imply WB
-    endcase
+  function logic [31:0] dedm_mux(logic [4:0] rs, logic [31:0] passthrough);
+    return (p.cs_e.w && (rs == p.rd_e))?
+     p.alu_res: (p.cs_m.w && (rs == p.rd_m))?
+     write_back: passthrough;
   endfunction
 
-  assign r1_e_mux = reg_e_mux(r1_e, r1_e_sel);
-  assign r2_e_mux = reg_e_mux(r2_e, r2_e_sel);
+  assign p.r1_e_mux = dedm_mux(p.rs1, p.r1);
+  assign p.r2_e_mux = dedm_mux(p.rs2, p.r2);
 
-  assign alu_mux_input_1 = (cs_e.ignore_first_operand)? 0: alu_src_sel_e[0]? pc_e: r1_e_mux;
-  assign alu_mux_input_2 = alu_src_sel_e[1]? imm_e: r2_e_mux;
+  assign p.alu_mux_input_1 = (p.cs.ignore_first_operand)? 0: p.alu_src_sel[0]? p.pc_d: p.r1_e_mux;
+  assign p.alu_mux_input_2 = p.alu_src_sel[1] ? p.imm : p.r2_e_mux;
 
   alu alu_e (
-      .func3(func3_e),
-      .cs(cs_e),
-      .alu_a(alu_mux_input_1),
-      .alu_b(alu_mux_input_2),
-      // .overwrite_add(alu_src_sel_e[1] & alu_src_sel_e[0] | cs_e.s), //TODO clarify more, when both bits are set, it means its either U or J type. However, we only want to detect U type, and calculate the data to be written, esp in the case of lui and auipc
-      .overflow(overflow),
-      .zero(zero),
-      .alu_result(alu_res)
+      .clk(clk),
+      .func3(p.func3),
+      .cs(p.cs),
+      .alu_a(p.alu_mux_input_1),
+      .alu_b(p.alu_mux_input_2),
+      .overflow(p.overflow),
+      .zero(p.zero),
+      .alu_result(p.alu_res)
   );
 
-  assign jmp_addr = pc_e + imm_e;
-  assign branch_hit = cs_e.b & (
-      (zero && func3_e == EQ) |
-      (!zero && func3_e == NE) |
-      ((overflow && alu_res[31]) && func3_e == LT) | //对于有符号的比较，当R1 < R2时，OF == SF
-      (!(overflow && alu_res[31]) && func3_e == GE) |
-      ((alu_res[31]) && func3_e == LTU) |
-      (!(alu_res[31]) && func3_e == GEU) 
+  assign p.jmp_addr = p.pc_e + p.imm_e;
+  assign p.branch_hit = p.cs_e.b & (
+      (p.zero && p.func3_e == EQ) |
+      (!p.zero && p.func3_e == NE) |
+      ((p.overflow && p.alu_res[31]) && p.func3_e == LT) | //对于有符号的比较，当p.R1 < p.R2时，OF == SF
+      (!(p.overflow && p.alu_res[31]) && p.func3_e == GE) |
+      ((p.alu_res[31]) && p.func3_e == LTU) |
+      (!(p.alu_res[31]) && p.func3_e == GEU) 
   );
 
   // multiplier m_e (
   //   .clk_n(clk),
-  //   .en(cs_e.m),
-  //   .r1(r1_e),
+  //   .en(p.cs_e.m),
+  //   .r1(p.r1_e),
   //   // .busy(m_busy),
-  //   .r2(r2_e),
-  //   .op(mul_op_t'(func3_e)),
-  //   .rd(mul_res)
+  //   .r2(p.r2_e),
+  //   .op(mul_op_t'(p.func3_e)),
+  //   .rd(p.mul_res)
   // );
 
   //Stage 4
 
-  assign cs_om = cs_m;
-  assign mem_write_addr = alu_res_m;
-  assign mem_write_data = r2_e_mux_m;
+  assign cs_oe = p.cs_e;
+  assign mem_write_addr = p.alu_res;
+
+  assign mem_write_data = (p.cs_m.l && (p.rd_m == p.rs2_e)) ? mem_read_data : p.r2_e_mux_m;
 
   //Stage 5
 
-  assign write_back = (cs_w.j | cs_w.b)? pc_w + 4: cs_w.l? mem_read_data_w : alu_res_w;
+  assign write_back = (p.cs_m.j | p.cs_m.b) ? p.pc_w + 4 : p.cs_m.l ? mem_read_data : p.alu_res_m;
 
- //Misc
+  //Misc
 
-  hazard hz(rs1, rs2, rs1_e, rs2_e, rd_e, rd_m, rd_w, cs_e, cs_m, cs_w, branch_hit, instr_ready, r1_e_sel, r2_e_sel, stall_f, stall_d, flush_f, flush_d, flush_e);
+
+  // hazard hz(p.hazard, instr_ready);
 
   always_comb begin
-    if(cs_e.j | branch_hit) begin
-      $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h(b) 0x%0h(j)", $time, cs_e.j, branch_hit, jmp_addr, alu_res);
+    if (p.cs_e.j | p.branch_hit) begin
+      $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h(b) 0x%0h(j)", $time, p.cs_e.j, p.branch_hit,
+               p.jmp_addr, p.alu_res);
     end
   end
   initial begin
   end
 endmodule
+

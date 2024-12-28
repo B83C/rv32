@@ -12,7 +12,7 @@ module data_src (
     input [31:0] addr,
     input [31:0] wdata,
     input control_signals_t cs,
-    output reg [31:0] memory
+    output logic [31:0] memory
 );
 
   logic [63:0] read_mem;
@@ -23,7 +23,7 @@ module data_src (
   logic instr_sel;
   logic [63:0] ram_instr;
 
-  always @(negedge clk) begin
+  always @(posedge clk) begin
     instr_sel <= !pc_addr[2];
   end
 
@@ -58,12 +58,22 @@ module data_src (
     .readya(instr_ready),
 
     .clkb(clk) /* synthesis syn_isclock = 1 */,
-    .enb(mem_en),
+    .enb(mem_en & (cs.s | cs.l)),
     .web({8{cs.s}} & b_en),
     .renb(cs.l),
     .addrb(14'(addr/8)),
     .dinb(wdata_e),
     .doutb(read_mem)
   );
+
+
+  always @(negedge clk) begin
+    if(cs.l) begin
+      $display("[MEM %t] Read %h from %h", $time(), memory, addr);
+    end else if(cs.s) begin
+      $display("[MEM %t] Write %h to %h", $time(), wdata_e, addr);
+    end
+  	
+  end
 
 endmodule

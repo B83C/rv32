@@ -11,11 +11,11 @@ module hazard (
   output logic flush_f, flush_d, flush_e 
 );
 
-  assign r1_e_sel = (cs_m.w && (rs1_e == rd_m))?
-     ALU : (cs_w.w && (rs1_e == rd_w))?
+  assign r1_e_sel = (cs_e.w && (rs1 == rd_e))?
+     ALU : (cs_m.w && (rs1 == rd_m))?
      WB: RAW;
-  assign r2_e_sel = (cs_m.w && (rs2_e == rd_m))?
-     ALU : (cs_w.w && (rs2_e == rd_w))?
+  assign r2_e_sel = (cs_e.w && (rs2 == rd_e))?
+     ALU : (cs_m.w && (rs2 == rd_m))?
      WB: RAW;
   
   // assign stall_f = 0;
@@ -23,10 +23,10 @@ module hazard (
   // assign stall_f = cs_e.j | (cs_e.b & branch_hit);
   // assign stall_d = cs_e.j | (cs_m.b & branch_hit);
 
-  assign flush_f = 1;
-  assign flush_d = !(cs_e.j | (cs_e.b & branch_hit));
+  assign flush_f = 0;
+  assign flush_d = (cs_e.j | (cs_e.b & branch_hit));
   // assign flush_e = !stall_d;
-  assign flush_e = flush_d & !stall_d;
+  assign flush_e = flush_d | stall_d;
   // assign flush_e = flush_f;
 
   assign stall_d = (cs_e.l && (rd_e == rs2 | rd_e == rs1) && rd_e != 0) + !instr_ready;

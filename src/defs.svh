@@ -7,6 +7,9 @@
 parameter MEM_ADDR_WIDTH = $clog2(128 * 1024 / 4);
 parameter XLEN = 32;
 
+parameter PC_START_ADDR = 32'h0;
+
+// typedef logic[31:0]
 typedef struct packed {
   logic [1:0] alu_src_sel; 
   logic [32 - 1 :0] immediate;
@@ -82,44 +85,6 @@ typedef struct packed {
   //RV32M
   logic m;
 } control_signals_t;
-
-typedef struct {
-  logic stall_f, stall_d, stall_e;
-  logic flush_f, flush_d, flush_e;
-
-  logic branch_hit;
-  logic [31:0] jmp_addr;
- 
-  logic [31:0] pc_f, pc_d, pc_e, pc_m, pc_w;
-
-  register_data_sel r1_d_sel, r2_d_sel, r1_e_sel, r2_e_sel;
-
-  logic [4:0] rs1_f, rs1_d;
-  logic [4:0] rs2_f, rs2_d;
-
-  logic [4:0] rd_f, rd_d, rd_e, rd_m;
-
-  logic [31:0] r1_mux, r2_mux, r1_e_mux, r2_e_mux, r2_e_mux_m;
-  logic [31:0] r1, r1_e;
-  logic [31:0] r2, r2_e;
-
-
-  logic [31:0] imm, imm_e;
-
-  logic [2:0] func3, func3_e;
-  logic [1:0] alu_src_sel, alu_src_sel_e;
-
-  control_signals_t cs, cs_e, cs_m, cs_w;
-
-  logic [31:0] mul_res, mul_res_m;
-  logic [31:0] alu_mux_input_1;
-  logic [31:0] alu_mux_input_2;
-  logic [31:0] alu_res, alu_res_m, alu_res_w;
-
-  logic overflow, zero;
-
-  logic mul_busy;
-} pipeline_unit_t;
 
 typedef struct packed {
   logic [15:0] padding;

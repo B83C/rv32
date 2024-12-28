@@ -20,7 +20,7 @@ module risc_v (
   wire instr_ready;
   wire [31:0] mem_write_addr;
   wire [31:0] mem_write_data, mem_read_data;
-  wire control_signals_t cs_m;
+  wire control_signals_t cs_e;
   wire [31:0] mem_read_mux;
   wire mem_en;
 
@@ -66,14 +66,14 @@ module risc_v (
       .mem_read_data(mem_read_mux),
       .mem_write_addr(mem_write_addr),
       .mem_write_data(mem_write_data),
-      .cs_om(cs_m)
+      .cs_oe(cs_e)
   );
 
   mmio mmio1 (
       .clk(clk),
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .cs(cs_m),
+      .cs(cs_e),
       .mem_read_mux(mem_read_mux),
       .mem_en(mem_en),
       .mem_read_data(mem_read_data),
@@ -92,7 +92,7 @@ module risc_v (
       .mem_en(mem_en),
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .cs(cs_m),
+      .cs(cs_e),
       .memory(mem_read_data)
   );
 endmodule

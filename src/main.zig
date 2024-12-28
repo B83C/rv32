@@ -60,9 +60,9 @@ fn delay() void {
 }
 
 fn main() noreturn {
-    // for ("Hello world\n") |b| {
-    //     uart.* = b;
-    // }
+    for ("Hello world\n") |b| {
+        uart.* = b;
+    }
     while (true) {
         while ((io_reg_read.uart.state & 0b100) > 0) {
             io_reg_write.uart.ctrl = 0;
