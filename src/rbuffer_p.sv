@@ -7,6 +7,7 @@
 // | en[N] | en[N-1] | en[N-2] | en[N-3] ... | en[0] |
 // 
 // if the correstponding enable bit is set, on the next clock, the result will be shifted into the right slot. Otherwise, it does not accept shift-ins from the left. However, if it happens that a slot has a disabled slot on its left, it reads 0 when shifting is applied.
+
 module rbuffer_p #(
     parameter MRLen = 6,
     parameter Nitems = 1,

@@ -5,29 +5,31 @@ interface pipeline_i(input clk);
   logic stall_f, stall_d, stall_e;
   logic flush_f, flush_d, flush_e;
  
-  logic [31:0] instr_d;
-  logic [31:0] pc, pc_f, pc_d, pc_e, pc_m, pc_w;
-  logic [4:0] rs1, rs1_e;
-  logic [4:0] rs2, rs2_e;
+  logic stalls [N_STAGES-1:0];
+  logic flushes [N_STAGES-1:0];
 
-  logic [4:0] rd, rd_e, rd_m, rd_w;
+  word_t instr [N_STAGES:0];
+  word_t pc [N_STAGES:0];
+  reg_ind_t rs1 [N_STAGES:0];
+  reg_ind_t rs2 [N_STAGES:0];
+  reg_ind_t rd [N_STAGES:0];
+  word_t r1 [N_STAGES:0];
+  word_t r2 [N_STAGES:0];
+  word_t imm [N_STAGES:0];
+  logic [2:0] func3 [N_STAGES:0];
+  logic [1:0] alu_src_sel [N_STAGES:0];
+  control_signals_t cs [N_STAGES:0];
+  word_t mul_res [N_STAGES:0];
+  word_t alu_res [N_STAGES:0];
+
+  word_t r1_temp, r2_temp;
+  word_t instr_in;
 
   logic [31:0] r1_e_mux, r2_e_mux, r2_e_mux_m;
-  logic [31:0] r1, r1_e;
-  logic [31:0] r2, r2_e;
 
-  logic [31:0] imm, imm_e;
-
-  logic [2:0] func3, func3_e;
-  logic [1:0] alu_src_sel, alu_src_sel_e;
-
-  control_signals_t cs, cs_d, cs_e, cs_m, cs_w;
-
-  logic [31:0] mul_res, mul_res_m;
   logic [31:0] alu_mux_input_1;
   logic [31:0] alu_mux_input_2;
-  logic [31:0] alu_res, alu_res_m, alu_res_w;
-  logic [31:0] mem_read_data_w;
+  word_t mem_read_data [N_STAGES:0];
 
   logic branch_hit;
   logic [31:0] jmp_addr;
@@ -36,7 +38,7 @@ interface pipeline_i(input clk);
   register_data_sel r1_e_sel, r2_e_sel;
 
   modport ir_dec(input clk,
-    input instr_d,
+    input instr,
     input flush_d, 
     output cs,
     output rs1, rs2, rd,
@@ -45,12 +47,12 @@ interface pipeline_i(input clk);
     output func3
   );
 
-  modport hazard(input clk,
-   input rs1, rs2, rs1_e, rs2_e, rd_e, rd_m, rd_w,
-   input cs_e, cs_m, cs_w, 
-   input branch_hit,
-   output r1_e_sel, r2_e_sel,
-   output stall_f, stall_d,
-   output flush_f, flush_d, flush_e 
-  );
+  // modport hazard(input clk,
+  //  input rs1, rs2, rs1_e, rs2_e, rd_e, rd_m, rd_w,
+  //  input cs_e, cs_m, cs_w, 
+  //  input branch_hit,
+  //  output r1_e_sel, r2_e_sel,
+  //  output stall_f, stall_d,
+  //  output flush_f, flush_d, flush_e 
+  // );
 endinterface

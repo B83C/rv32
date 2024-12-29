@@ -15,6 +15,18 @@ typedef struct packed {
   logic [32 - 1 :0] immediate;
 } alu_info_t;
 
+parameter N_STAGES = 5;
+typedef logic [31:0] word_t;
+typedef logic [4:0] reg_ind_t;
+typedef enum logic[2:0]{
+  F = 0,
+  D,
+  E,
+  M,
+  W,
+  IN
+} stage_t;
+
 typedef enum logic[2:0]{
   ADD = 0,
   SLL,
@@ -160,5 +172,23 @@ endfunction
 function [31:0] be(logic [31:0] r);
   return {<<8{r}};
 endfunction
+
+typedef struct {
+  word_t stream[N_STAGES - 1:0];
+} pbuffer_entry_t ; 
+
+typedef struct {
+  word_t in;
+} pbuffer_entry_in_t ; 
+
+typedef struct packed {
+  stage_t  start_stage;
+  stage_t  end_stage;
+} pbuffer_meta_t ; 
+
+typedef union {
+  word_t w;
+  reg_ind_t r;
+} mixed_t;
 
 `endif

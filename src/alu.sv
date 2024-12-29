@@ -10,7 +10,7 @@ module alu (
     // input overwrite_add,
     output overflow,
     output zero,
-    output reg [31:0] alu_result
+    output logic [31:0] alu_result
 );
 
   wire [31:0] add_result;
