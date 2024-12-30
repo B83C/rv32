@@ -4,7 +4,7 @@
 module tb2;
 
   logic clk = 0;
-  logic rst_n = 1;
+  logic rst = 0;
 
   logic [31:0] addr, data2, memory;
   control_signals_t cs;
@@ -13,12 +13,7 @@ module tb2;
   logic utx, urx;
 
   risc_v rv32 (
-      .clk(clk),
-      .rst_n(rst_n),
-      .utx(utx),
-      .urx(urx),
-      .JB(JB),
-      .JC(JC)
+    .*
   );
 
   always #1 clk = ~clk;
@@ -45,7 +40,7 @@ module tb2;
   initial begin
     $dumpfile("waveform.fst");
     $dumpvars(0, tb);
-    #1000 $finish();
+    #1500 $finish();
   end
   // always #1 
   // inital begin

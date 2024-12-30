@@ -3,7 +3,7 @@
 
 module risc_v (
     input clk,
-    input rst_n,
+    input rst,
     output [7:0] JB,
     output [7:0] JC,
     input urx,
@@ -17,10 +17,10 @@ module risc_v (
 
   wire [31:0] pc_addr;
   wire [31:0] instr;
-  wire instr_ready;
+  wire instr_ready, read_instr;
   wire [31:0] mem_write_addr;
   wire [31:0] mem_write_data, mem_read_data;
-  wire control_signals_t cs_e;
+  wire control_signals_t cs_o [N_STAGES-1:0];
   wire [31:0] mem_read_mux;
   wire mem_en;
 
@@ -43,7 +43,7 @@ module risc_v (
       .rx_ctrl(io_w.uart.ctrl[1:0]),
       .rx_ready(io_r.uart.state[1]),
       .clk(clk),
-      .rst(!rst_n)
+      .rst(rst)
   );
 
   uart_tx uart_wm (
@@ -54,45 +54,26 @@ module risc_v (
       .tx_ready(io_r.uart.state[2]),
 
       .clk(clk),
-      .rst(!rst_n)
+      .rst(rst)
   );
 
   pipeline_unit pu1 (
-      .clk(clk),
-      .rst_n(rst_n),
-      .instr(instr),
-      .instr_ready(instr_ready),
-      .pc_addr(pc_addr),
-      .mem_read_data(mem_read_mux),
-      .mem_write_addr(mem_write_addr),
-      .mem_write_data(mem_write_data),
-      .cs_oe(cs_e)
+      .*,
+      .mem_read_data(mem_read_mux)
   );
 
   mmio mmio1 (
-      .clk(clk),
+      .*,
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .cs(cs_e),
       .mem_read_mux(mem_read_mux),
-      .mem_en(mem_en),
-      .mem_read_data(mem_read_data),
-      .io_rw(io_rw),
-      .io_r(io_r),
-      .io_w(io_w)
+      .mem_read_data(mem_read_data)
   );
 
   data_src data_mem (
-      .clk(clk),
-      .pc_addr(pc_addr),
-      .read_instr(1),
-      .instr(instr),
-      .instr_ready(instr_ready),
-
-      .mem_en(mem_en),
+      .*,
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .cs(cs_e),
       .memory(mem_read_data)
   );
 endmodule

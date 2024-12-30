@@ -5,7 +5,7 @@ module mmio (
     input clk,
     input [31:0] addr,
     input [31:0] wdata,
-    input control_signals_t cs,
+    input control_signals_t cs_o[N_STAGES - 1:0],
     output logic [31:0] mem_read_mux,
     output logic io_rw,
     input [31:0] mem_read_data,
@@ -18,8 +18,12 @@ module mmio (
   // assign mem_en = (addr[17]==1'b0);
   logic mem_en_buffer; 
   logic [31:0] io_read;
+
+  //input
   assign io_rw = (addr >= IO_START + (IO_START/2)); //0: Read, !: Write
-  assign mem_en = !(addr >= IO_START && (cs.l | cs.s));
+  assign mem_en = !(addr >= IO_START && (cs_o[E].l | cs_o[E].s));
+
+  //output
   assign mem_read_mux = mem_en_buffer? mem_read_data: io_read;
 
 
@@ -28,18 +32,18 @@ module mmio (
   end
 
   always @(posedge clk) begin
-    if (!mem_en && cs.l && !io_rw) begin
-      io_read <= io_r[addr[15:0] * 8 +: 32] & mask(data_width'(cs.dw));
-      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[addr[15:0] * 8 +: 32]& mask(data_width'(cs.dw)));
+    if (!mem_en && cs_o[E].l && !io_rw) begin
+      io_read <= io_r[addr[15:0] * 8 +: 32] & mask(data_width'(cs_o[E].dw));
+      $display("[io] Reading from io_register at %h, data: %h", addr, io_r[addr[15:0] * 8 +: 32]& mask(data_width'(cs_o[E].dw)));
     end
   end
 
   always_ff @(posedge clk) begin
     // if (io_rw) begin
-    //   $display("io_rw triggered mem_en %d cs.s %d cs %h addr %h", mem_en, cs.s,cs, addr);
+    //   $display("io_rw triggered mem_en %d cs_o[E].s %d cs %h addr %h", mem_en, cs_o[E].s,cs, addr);
     // end
-    if (!mem_en && cs.s && io_rw) begin
-      io_w[addr[15:0] * 8 +: 32] <= (io_w[addr[15:0] * 8 +: 32] & ~mask(data_width'(cs.dw))) | {wdata & mask(data_width'(cs.dw))};
+    if (!mem_en && cs_o[E].s && io_rw) begin
+      io_w[addr[15:0] * 8 +: 32] <= (io_w[addr[15:0] * 8 +: 32] & ~mask(data_width'(cs_o[E].dw))) | {wdata & mask(data_width'(cs_o[E].dw))};
       $display("[io %d] Writing to io_register at %h, data: %h", $time(), addr, wdata);
     end
   end

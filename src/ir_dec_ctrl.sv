@@ -21,13 +21,12 @@ wire [6:0] opcode;
 
 logic [31:0] ir;
 
-assign ir = p.instr[D];
+assign ir = p.instr_in;
 
 assign f3 = ir[14:12];
 assign f7 = ir[31:25];
 assign f12 = ir[31:20];
 assign opcode = ir[6:0];
-
 
 function logic[33:0] T(instr_type t); 
   case (t) 
@@ -46,19 +45,27 @@ typedef struct packed {
   alu_info_t alu_info;
 } result_t;
 
-assign p.func3[IN] = f3;
-assign p.rs1[IN] = ir[19:15];
-assign p.rs2[IN] = ir[24:20];
-assign p.rd[IN] = ir[11:7];
-result_t d_res, d_res_filtered; // Decode result
+result_t d_res; // Decode result
 
-assign d_res_filtered = p.flushes[D]?0:d_res;
-
-assign p.cs[IN] = d_res_filtered.control_signals;
-
-assign p.imm[IN] = d_res_filtered.alu_info.immediate;
-
-assign p.alu_src_sel[IN] = d_res_filtered.alu_info.alu_src_sel;
+always @(posedge p.clk) begin
+  if(!p.stalls[D] && !p.flushes[D]) begin
+    p.rs1_in <= ir[19:15];
+    p.rs2_in <= ir[24:20];
+    p.rd_in <= ir[11:7];
+    p.func3_in <= f3;
+    p.cs_in <= d_res.control_signals;
+    p.imm_in <= d_res.alu_info.immediate;
+    p.alu_src_sel_in <= d_res.alu_info.alu_src_sel;
+  end else if(p.flushes[D]) begin
+    p.rs1_in <= 0;
+    p.rs2_in <= 0;
+    p.rd_in <= 0;
+    p.func3_in <= 0;
+    p.cs_in <= 0;
+    p.imm_in <= 0;
+    p.alu_src_sel_in <= 0;
+  end
+end
 
 always_comb begin
     // $display("Decoding %h", ir);

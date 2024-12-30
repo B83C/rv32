@@ -3,6 +3,7 @@
 
 module alu (
     input clk,
+    input en, 
     input [2:0] func3,
     input control_signals_t cs,
     input [31:0] alu_a, 
@@ -37,42 +38,46 @@ module alu (
   // assign opr = (overwrite_add)? ADD: alu_op_t'(func3);
 
   always @(posedge clk) begin
-    if(cs.a) begin
-      case(alu_op_t'(func3)) 
-        ADD: begin
-          alu_result <= add_result;
-        end
-        SLL: begin
-          alu_result <= alu_a << shamt;
-        end
-        SLT: begin
-          alu_result <= {31'd0, overflow & add_result[31]};
-        end
-        SLTU: begin
-          alu_result <= {31'd0, add_result[31]};
-        end
-        XOR: begin
-          alu_result <= alu_a ^ alu_b;
-        end
-        SRL: begin
-          if(cs.sign) begin
-            alu_result <= alu_a >>> shamt;
-          end else begin
-            alu_result <= alu_a >> shamt;
+    if(en) begin
+      if(cs.a) begin
+        case(alu_op_t'(func3)) 
+          ADD: begin
+            alu_result <= add_result;
           end
-        end
-        OR: begin
-          alu_result <= alu_a | alu_b;
-        end
-        AND: begin
-          alu_result <= alu_a & alu_b;
-        end
-        default: begin
-          alu_result <= 0;
-        end
-      endcase
+          SLL: begin
+            alu_result <= alu_a << shamt;
+          end
+          SLT: begin
+            alu_result <= {31'd0, overflow & add_result[31]};
+          end
+          SLTU: begin
+            alu_result <= {31'd0, add_result[31]};
+          end
+          XOR: begin
+            alu_result <= alu_a ^ alu_b;
+          end
+          SRL: begin
+            if(cs.sign) begin
+              alu_result <= alu_a >>> shamt;
+            end else begin
+              alu_result <= alu_a >> shamt;
+            end
+          end
+          OR: begin
+            alu_result <= alu_a | alu_b;
+          end
+          AND: begin
+            alu_result <= alu_a & alu_b;
+          end
+          default: begin
+            alu_result <= 0;
+          end
+        endcase
+      end else begin
+        alu_result <= add_result;
+      end
     end else begin
-      alu_result <= add_result;
+    	alu_result <= 0;
     end
   end
 endmodule

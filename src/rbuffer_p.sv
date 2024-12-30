@@ -16,7 +16,7 @@ module rbuffer_p #(
     // parameter RLen = 6
 ) (
     input clk,
-    input grst_n,  //global reset
+    input grst,  //global reset
     input stall[MRLen-2:0],
     input flush[MRLen-2:0],
     input logic [XLEN-1:0] in[Nitems-1:0],
@@ -28,8 +28,8 @@ module rbuffer_p #(
   generate
     for (w = 0; w < Nitems; w++) begin : gen_slot
       for (i = 4 - start[w]; i >= 0; i--) begin : gen_item
-        always @(posedge clk, negedge grst_n) begin
-          if (!grst_n | flush[4 - (i)]) begin
+        always @(posedge clk, posedge grst) begin
+          if (grst | flush[4 - (i)]) begin
             stream[w][4 - (i)] <= 0;
           end else if (!stall[4 - (i)]) begin
             if (i == 4 - start[w]) begin
@@ -44,8 +44,8 @@ module rbuffer_p #(
   // generate
   //   for (w = 0; w < Nitems; w++) begin : gen_slot
   //     for (i = start[w]; i < MRLen- 1; i++) begin : gen_item
-  //       always @(posedge clk, negedge grst_n) begin
-  //         if (!grst_n | flush[i]) begin
+  //       always @(posedge clk, negedge grst) begin
+  //         if (!grst | flush[i]) begin
   //           stream[w][i] <= 0;
   //         end else if (!stall[i]) begin
   //           stream[w][i] <= (!stall[i-1])?(i == start[w])?in[w]:stream[w][i-1] : 0;
