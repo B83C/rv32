@@ -19,7 +19,7 @@ module dual_port_ram #(
     // logic [64-1:0] porta_read;
     // assign douta = porta_read[31:0];
     // Memory declaration
-    (* ram_style = "block", ram_decomp = "power" *) logic [64-1:0] mem [128 * 1024/ 8 - 1:0]; // 64-bit wide memory
+    (* ram_style = "block" *) logic [64-1:0] mem [128 * 1024/ 8 - 1:0]; // 64-bit wide memory
 
     // Port A (32-bit access)
     always @(posedge clka) begin
@@ -29,10 +29,6 @@ module dual_port_ram #(
             readya <= 1;
         end
     end
-
-    // initial begin
-    //     $monitor("0x1fffc : %h %h", mem[14'h3fff], mem[14'h0]);
-    // end
     // Port B (64-bit access)
     always @(posedge clkb) begin
         if (enb) begin
@@ -41,17 +37,17 @@ module dual_port_ram #(
                     mem[addrb][(i*8) +: 8] <= dinb[i * 8 +: 8];
                 end
             end
-            if (renb) begin
-                doutb <= mem[addrb];
-            end 
+            // if (renb) begin
+            doutb <= mem[addrb];
+            // end 
         end
     end
 
     integer file, r;
     initial begin
-        // $readmemh("../test.coe", mem);
-        file = $fopen("/home/b83c/fpga/rv32/zig-out/bin/rv32_fpga.bin", "rb");
-        r = $fread(mem, file, 0, 128 * 1024);  // Read binary data into memory
-        $fclose(file);
+        $readmemh("/home/b83c/fpga/rv32/zig-out/bin/rv32_fpga.mem", mem);
+        // file = $fopen("/home/b83c/fpga/rv32/zig-out/bin/rv32_fpga.bin", "rb");
+        // r = $fread(mem, file, 0, 128 * 1024);  // Read binary data into memory
+        // $fclose(file);
     end
 endmodule
