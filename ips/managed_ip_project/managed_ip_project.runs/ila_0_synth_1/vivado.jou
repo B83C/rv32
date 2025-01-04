@@ -3,8 +3,8 @@
 # SW Build 5239630 on Fri Nov 08 22:34:34 MST 2024
 # IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
 # SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
-# Start of session at: Mon Dec 30 18:02:27 2024
-# Process ID         : 647894
+# Start of session at: Sat Jan  4 23:37:27 2025
+# Process ID         : 3108376
 # Current directory  : /home/b83c/fpga/rv32/ips/managed_ip_project/managed_ip_project.runs/ila_0_synth_1
 # Command line       : vivado -log ila_0.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source ila_0.tcl
 # Log file           : /home/b83c/fpga/rv32/ips/managed_ip_project/managed_ip_project.runs/ila_0_synth_1/ila_0.vds
@@ -13,12 +13,12 @@
 # Platform           : Arch
 # Operating System   : Arch Linux
 # Processor Detail   : AMD Ryzen 7 PRO 6850U with Radeon Graphics
-# CPU Frequency      : 1303.141 MHz
+# CPU Frequency      : 2093.849 MHz
 # CPU Physical cores : 8
 # CPU Logical cores  : 16
 # Host memory        : 15460 MB
 # Swap memory        : 17179 MB
 # Total Virtual      : 32639 MB
-# Available Virtual  : 16005 MB
+# Available Virtual  : 12429 MB
 #-----------------------------------------------------------
 source ila_0.tcl -notrace

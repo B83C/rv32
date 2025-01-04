@@ -22,9 +22,9 @@ cmd:
 update_ip:
      {{ vivado }} -nolog -nojournal -mode tcl -source  update_ip.tcl 
 
-zig:
+zig bits="64":
     zig build
-    bin2coe -i ./zig-out/bin/rv32_fpga.bin -o ./zig-out/bin/rv32_fpga.mem -w 64 --mem
+    bin2coe -i ./zig-out/bin/rv32_fpga.bin -o ./zig-out/bin/rv32_fpga.mem -w {{ bits }} --mem
     # bin2coe -i ./zig-out/bin/rv32_fpga.bin -o ./zig-out/bin/rv32_fpga.coe -w 8
 
 # /home/b83c/tools/Xilinx/Vivado/2024.1/bin/vivado -nolog -nojournal -mode batch -notrace -quiet -source  build.tcl 

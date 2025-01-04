@@ -24,6 +24,7 @@ module data_src (
   wire [31:0] rdata_e; 
 
   logic instr_sel;
+  data_width dw_c;
   logic [31:0] addr_c;
   logic [63:0] instr_buffer;
 
@@ -47,6 +48,7 @@ module data_src (
       memory <= memory_buffer;
     end
     addr_c <= addr;
+    dw_c <= dw;
   end
 
   //Input
@@ -54,7 +56,7 @@ module data_src (
 
   //Output
   // assign instr = ram_instr[instr_sel*32 +: 32];
-  assign rdata_e = 32'({read_mem << ((addr_c[2:0]) * 8)});
+  assign rdata_e = 32'({read_mem >> ((addr_c[2:0]) * 8)});
 
   always_comb begin
     if(mem_rw) begin
@@ -62,7 +64,7 @@ module data_src (
     end else begin
       b_en = 0;
     end
-    case(dw)
+    case(dw_c)
       DB:  memory_buffer = {24'd0, rdata_e[8-1:0]};
       DH:  memory_buffer = {16'd0, rdata_e[16-1:0]};
       DW:  memory_buffer = rdata_e[32-1:0];
@@ -107,8 +109,8 @@ module data_src (
 
 
   always @(posedge clk) begin
-    if(mem_en && !mem_rw) begin
-      $display("[MEM %t] Read %h from %h raw %h", $time(), memory, addr, read_mem);
+    if(readyb[0]) begin
+      $display("[MEM %t] Read %h from %h raw %h", $time(), memory_buffer, addr_c, read_mem);
     end else if(mem_en && mem_rw) begin
       $display("[MEM %t] Write %h to %h", $time(), wdata, addr);
     end

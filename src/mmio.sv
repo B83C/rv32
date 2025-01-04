@@ -5,7 +5,6 @@ module mmio (
     input clk,
     input [31:0] addr,
     input [31:0] wdata,
-    input [31:0] mem_read_data,
     input mem_rw,
     input io_en,
     input data_width dw,

@@ -31,41 +31,30 @@ module tb7;
 
   logic clka /* synthesis syn_isclock = 1 */;
   logic ena;
-  logic [13:0]addra;
-  logic [63:0]douta;
+  logic [12:0]addra;
+  logic [128-1:0]douta;
   logic instr_ready;
   logic clkb /* synthesis syn_isclock = 1 */;
   logic enb;
   logic renb;
   logic [7:0]web;
-  logic [13:0]addrb;
-  logic [63:0]dinb;
-  logic [63:0]doutb;
+  logic [12:0]addrb;
+  logic [128-1:0]dinb;
+  logic [128-1:0]doutb;
   logic data_ready;
 
   assign clka = clk;
   assign clkb = clk;
 
-  dual_port_ram dpr(.*);
+  assign addrb = cpu_req_addr[16:4]; 
+  assign renb = 1;
+  assign enb = mem_req_valid | cpu_req_valid;
+  assign web = {8{mem_req_wr}};
+  assign dinb = mem_wr_data;
+  assign mem_rd_data = doutb;
+  assign mem_req_ready = 1;
+  dual_port_ram #(128,128 * 1024) dpr(.*);
   cache c(.*);
-
-`define HANDLE_DATA_VARS(prefix, list) \
-    for (int i = 0; i < list.len(); i++) begin \
-        prefix``_``list[i] <= some_value; \
-    end  
-
-  `define GEN(prefix, list) \
-  generate \
-      genvar i; \
-      for (i = 0; i < 4; i++) begin : gen_vars \
-          logic [31:0] prefix``_``list[i];   \
-      end \
-  endgenerate
-
-`define DECLARE_STAGE_VARS(prefix, suffix_list) \
-    `foreach(suffix_list, suffix) logic [31:0] prefix``_``suffix;
-
-  `DECLARE_STAGE_VARS(tet, ({A, B, C, D}))
 
   always #1 clk <= ~clk;
 
@@ -78,34 +67,36 @@ module tb7;
     // $display("Size : %h", `TEST({32'b0, 32'b0}));
 
     clk = 0;
-    cpu_req_addr = 17'hFADE;
+    cpu_req_addr = 17'hA;
     cpu_req_valid = 1;
     cpu_req_wr = 0; 
-    mem_req_ready = 1;
-    mem_rd_data = {4{32'hDEADBEEF}};
 
-    #5;
+    #12;
     cpu_req_addr = 17'hDAFE;
     cpu_req_valid = 1;
     cpu_req_wr = 1; 
-    cpu_wr_data = {32'hFEEDDEAD};
-    mem_req_ready = 1;
+    cpu_wr_data = {32'hDEDEDADA};
 
-    #1 
+    #2cpu_req_valid = 1;
+
+    #4cpu_wr_data = {32'hDADEDADB};
+
+    #4 
     cpu_req_addr =  0;
     cpu_req_valid = 0;
     cpu_req_wr = 0; 
     cpu_wr_data = 0;
-    mem_req_ready = 0;
 
-    #5;
+    #2cpu_req_valid = 0;
+
+    #4;
     cpu_req_addr = 17'hDAFE;
     cpu_req_valid = 1;
     cpu_req_wr = 0; 
     // cpu_wr_data = {32'hFEEDDEAD};
-    mem_req_ready = 1;
+    #2cpu_req_valid = 0;
 
-    #5;
+    #4;
     ena = 1;
     addra = 0;
     #2 addra = 1;

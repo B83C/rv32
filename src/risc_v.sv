@@ -2,7 +2,7 @@
 `include "defs.svh"
 
 module risc_v (
-    input clk,
+    input clk_raw,
     input rst,
     output [7:0] JB,
     output [7:0] JC,
@@ -10,6 +10,21 @@ module risc_v (
     input urx,
     output utx
     //io signals
+);
+
+  
+    logic clk_66;
+    wire clk = clk_66;
+
+  clk_mcmm clk_m
+   (
+    // Clock out ports
+    .clk_66(clk_66),     // output clk_66
+    // Status and control signals
+    .reset(0), // input reset
+    .locked(0),       // output locked
+   // Clock in ports
+    .clk_in1(clk_raw)      // input clk_in1
 );
 
   logic io_rw;
@@ -69,9 +84,8 @@ module risc_v (
   mmio mmio1 (
       .*,
       .addr(mem_write_addr),
-      .wdata(mem_write_data),
+      .wdata(mem_write_data)
       // .mem_read_mux(mem_read_mux),
-      .mem_read_data(mem_read_data)
   );
 
   data_src data_mem (

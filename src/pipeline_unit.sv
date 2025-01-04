@@ -29,11 +29,12 @@ module pipeline_unit (
 
   assign p.stalls[PF] = 0; 
 
-  wire mem_wait = !data_ready && (!io_en && p.cs[E].l);
-  assign p.stalls[M] = mem_wait;
-  assign p.stalls[E] = mem_wait;
-  assign p.stalls[D] = mem_wait | mem_load_hazard;
-  assign p.stalls[F] = mem_wait | mem_load_hazard;
+  wire mem_wait = !data_ready && (!p.io_en_i[E] && p.cs[E].l);
+  wire mem_wait_m = !data_ready && (!p.io_en_i_in[M] && (p.cs[M].l));
+  assign p.stalls[M] = mem_wait_m;
+  assign p.stalls[E] = mem_wait_m;
+  assign p.stalls[D] = mem_wait_m | mem_wait | mem_load_hazard;
+  assign p.stalls[F] = mem_wait_m | mem_wait | mem_load_hazard;
 
   logic start = 1;
   assign read_instr = state == RUNNING & !p.stalls[F];
@@ -65,11 +66,13 @@ module pipeline_unit (
   `S(D, E, alu_src_sel)
   `S(D, W, cs)
   `S(M, W, write_back)
+  `S(E, M, io_en_i)
+  `S(E, M, mem_en_i)
 
   //Stage 1
 
   // initial p.pc_in[F] = -4;
-  assign pc_addr = (p.pc[PF] < 'h1d4)?p.pc[PF]:0;
+  assign pc_addr = p.pc[PF];
   // always @(posedge clk) begin
   //   pc_addr <= (pc_temp < 'h1d4)? pc_temp : 0;
   // end
@@ -145,9 +148,9 @@ module pipeline_unit (
       (!p.zero && p.func3_in[E] == NE) |
       ((p.overflow && p.alu_res[E][31]) && p.func3_in[E] == LT) | //对于有符号的比较，当p.R1 < p.R2时，OF == SF
       (!(p.overflow && p.alu_res[E][31]) && p.func3_in[E] == GE) |
-      ((!p.overflow) && p.func3_in[E] == LTU) |
-      (!(p.overflow) && p.func3_in[E] == GEU) 
-  ); //TODO
+      ((p.alu_res[E][31]) && p.func3_in[E] == LTU) |
+      (!(p.alu_res[E][31]) && p.func3_in[E] == GEU) 
+  ); //TODO LTU for 32bit integer might not work
 
   // multiplier m_e (
   //   .clk_n(clk),
@@ -168,14 +171,16 @@ module pipeline_unit (
   assign dw = data_width'(p.cs[E].dw);
   assign mem_rw = p.cs[E].s;
 
-  assign mem_en = (!io_en && (p.cs[E].s | p.cs[E].l));
-  assign io_en = (p.alu_res[E] >= IO_START) && (p.cs[E].s | p.cs[E].l);
+  assign io_en = p.io_en_i[E];
+  assign mem_en = p.mem_en_i[E];
+  assign p.mem_en_i[E] = (!p.io_en_i[E] && (p.cs[E].s | p.cs[E].l));
+  assign p.io_en_i[E] = (p.alu_res[E] >= IO_START) && (p.cs[E].s | p.cs[E].l);
   // assign cs_oe = p.cs[E];
   assign mem_write_addr = p.alu_res[E];
 
-  assign mem_write_data = (p.cs[M].l && (p.rd[M] == p.rs2[E])) ? !io_en? mem_read_data : io_read: p.r2[E];
+  assign mem_write_data = (p.cs[M].l && (p.rd[M] == p.rs2_in[E])) ? !p.io_en_i[E]? mem_read_data : io_read: (p.cs[M].w && (p.rd[M] == p.rs2_in[E])) ? p.alu_res[M] : p.r2[E];
 
-  assign p.mem_read_data[M] = mem_en? mem_read_data: io_read;
+  assign p.mem_read_data[M] = p.mem_en_i_in[M]? mem_read_data: p.io_en_i_in[M]? io_read: 0;
   // assign p.mem_read_data[M] = mem_read_data;
   assign p.pc[M] = p.pc_in[M];
   assign p.cs[M] = p.cs_in[M];
@@ -216,24 +221,27 @@ module pipeline_unit (
 
   initial begin
     state = RESET;
-    $display("type of p.mem_data_read %s", $typename(type(p.func3[D])));
-    start = 0;
+    start = 1;
     // #10 start = 1;
   end
 
 
   wire word_t pca, istr, p2;
+  wire word_t p3, p4;
   assign pca = pc_addr;
   assign istr = instr;
-  assign p2 ={31'd0, instr_ready};  
+  assign p2 ={rst, p.cs[D], instr_ready};  
+  assign p3 = p.imm[D];
+  assign p4 = {<<{p.stalls}};
   
-  // ila_0 debug_probe (
-  // 	.clk(clk), // input wire clk
-
-
-  // 	.probe0(pca), // input wire [31:0]  probe0  
-  // 	.probe1(istr), // input wire [31:0]  probe1 
-  // 	.probe2(p2) // input wire [31:0]  probe2
-  // );
+  ila_0 debug_probe (
+  	.clk(clk), // input wire clk
+    .trig_in(pca == 0),
+  	.probe0(pca), // input wire [31:0]  probe0  
+  	.probe1(istr), // input wire [31:0]  probe1 
+  	.probe2(p2), // input wire [31:0]  probe2
+    .probe3(p3),
+    .probe4(p4)
+  );
 endmodule
 

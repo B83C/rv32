@@ -25,6 +25,8 @@ interface pipeline_i(input clk);
   `D(word_t, mul_res);
   `D(word_t, alu_res);
   `D(word_t, write_back);
+  `D(logic, io_en_i);
+  `D(logic, mem_en_i);
 
   word_t r1_temp, r2_temp;
   // word_t instr_in;
