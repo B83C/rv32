@@ -6,39 +6,70 @@ module data_src (
     input [31:0] pc_addr,
     input read_instr,
     output logic [31:0] instr,
-    output reg instr_ready,
+    output logic instr_ready,
 
     input mem_en,
     input [31:0] addr,
     input [31:0] wdata,
-    input control_signals_t cs_o [N_STAGES - 1:0],
+    input mem_rw,
+    data_width dw,
+    output logic data_ready,
     output logic [31:0] memory
 );
 
   logic [63:0] read_mem;
+  logic [31:0] memory_buffer;
   logic [7:0] b_en;
   logic [63:0] wdata_e; 
   wire [31:0] rdata_e; 
 
   logic instr_sel;
   logic [31:0] addr_c;
-  logic [63:0] ram_instr;
+  logic [63:0] instr_buffer;
+
+  logic [1:0] readya, readyb;
+  assign instr_ready = readya[0];
+  assign instr = instr_buffer[instr_sel*32 +: 32];
+  assign data_ready = readyb[1];
 
   always @(posedge clk) begin
+    {readya[0], readyb[0]} <= 0;
+    readya[1] <= readya[0];
+    readyb[1] <= readyb[0];
     if(read_instr) begin
-      instr_sel <= !pc_addr[2];
+      readya[0] <= 1;
+      instr_sel <= pc_addr[2];
+    end
+    if(mem_en && !mem_rw) begin
+      readyb[0] <= 1;
+    end 
+    if(readyb[0]) begin
+      memory <= memory_buffer;
     end
     addr_c <= addr;
   end
 
   //Input
-  assign wdata_e = {<<8{64'(wdata) << ((addr % 8) * 8)}};
-  assign b_en = {<<1{{4'd0, maskb(data_width'(cs_o[E].dw))} << (addr % 8)}};
+  assign wdata_e = {64'(wdata) << ((addr % 8) * 8)};
 
   //Output
-  assign instr = le(ram_instr[instr_sel*32 +: 32]);
-  assign rdata_e = 32'({<<8{read_mem << ((addr_c % 8) * 8)}});
-  assign memory = 32'((rdata_e)) & mask(data_width'(cs_o[M].dw)) | {{32{cs_o[M].sign_ex & get_msb(data_width'(cs_o[M].dw), 32'((rdata_e)))}} & ~mask(data_width'(cs_o[M].dw))};
+  // assign instr = ram_instr[instr_sel*32 +: 32];
+  assign rdata_e = 32'({read_mem << ((addr_c[2:0]) * 8)});
+
+  always_comb begin
+    if(mem_rw) begin
+    	b_en = {{4'd0, maskb(dw)} << (addr % 8)};
+    end else begin
+      b_en = 0;
+    end
+    case(dw)
+      DB:  memory_buffer = {24'd0, rdata_e[8-1:0]};
+      DH:  memory_buffer = {16'd0, rdata_e[16-1:0]};
+      DW:  memory_buffer = rdata_e[32-1:0];
+    default: begin end
+    endcase
+  end
+  // assign memory = 32'((rdata_e)) & mask(data_width'(cs_o[M].dw)) | {{32{cs_o[M].sign_ex & get_msb(data_width'(cs_o[M].dw), 32'((rdata_e)))}} & ~mask(data_width'(cs_o[M].dw))};
 
   // ram dpr(
   //   .clka(~clk) /* synthesis syn_isclock = 1 */,
@@ -58,16 +89,16 @@ module data_src (
 
   // assign instr_ready = 1;
   dual_port_ram dpr (
+    .*,
     .clka(clk) /* synthesis syn_isclock = 1 */,
     .ena(read_instr),
     .addra(14'(pc_addr/8)),
-    .douta(ram_instr),
-    .readya(instr_ready),
+    .douta(instr_buffer),
 
     .clkb(clk) /* synthesis syn_isclock = 1 */,
-    .enb(mem_en & (cs_o[E].s | cs_o[E].l)),
-    .web({8{cs_o[E].s}} & b_en),
-    .renb(cs_o[E].l),
+    .enb(mem_en),
+    .renb(!mem_rw),
+    .web(b_en),
     .addrb(14'(addr/8)),
     .dinb(wdata_e),
 
@@ -75,13 +106,11 @@ module data_src (
   );
 
 
-  logic mem_en_buff;
   always @(posedge clk) begin
-    mem_en_buff <= mem_en;
-    if(mem_en_buff && cs_o[M].l) begin
-      $display("[MEM %t] Read %h from %h", $time(), memory, addr_c);
-    end else if(mem_en && cs_o[E].s) begin
-      $display("[MEM %t] Write %h to %h", $time(), wdata_e, addr);
+    if(mem_en && !mem_rw) begin
+      $display("[MEM %t] Read %h from %h raw %h", $time(), memory, addr, read_mem);
+    end else if(mem_en && mem_rw) begin
+      $display("[MEM %t] Write %h to %h", $time(), wdata, addr);
     end
   end
 

@@ -60,10 +60,13 @@ fn delay() void {
 }
 
 fn main() noreturn {
+    var led: u8 = 0;
     for ("Hello world\n") |b| {
         uart.* = b;
     }
     while (true) {
+        led ^= 0xFF;
+        io_reg_write.gpio.leds = led;
         while ((io_reg_read.uart.state & 0b100) > 0) {
             io_reg_write.uart.ctrl = 0;
             delay();

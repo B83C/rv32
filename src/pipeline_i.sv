@@ -5,11 +5,11 @@ interface pipeline_i(input clk);
   // logic stall_f, stall_d, stall_e;
   // logic flush_f, flush_d, flush_e;
  
-  logic [N_STAGES-1:0] stalls;
-  logic [N_STAGES-1:0] flushes;
+  logic stalls [N_STAGES-1:0];
+  logic flushes [N_STAGES-1:0];
 
  `define D(x, y) \
-    x y [N_STAGES-1:0], y``_in;
+    x y [N_STAGES-1:0], y``_in[N_STAGES-1:0];
     
   `D(word_t, instr);
   `D(word_t, pc);
@@ -24,6 +24,7 @@ interface pipeline_i(input clk);
   `D(control_signals_t, cs);
   `D(word_t, mul_res);
   `D(word_t, alu_res);
+  `D(word_t, write_back);
 
   word_t r1_temp, r2_temp;
   // word_t instr_in;

@@ -11,6 +11,7 @@ module tb2;
 
   logic [7:0] JB, JC;
   logic utx, urx;
+  logic [7:0] led;
 
   risc_v rv32 (
     .*
@@ -40,7 +41,9 @@ module tb2;
   initial begin
     $dumpfile("waveform.fst");
     $dumpvars(0, tb);
-    #1500 $finish();
+    #1000 rst = 1;
+    #20 rst = 0;
+    #2000 $finish();
   end
   // always #1 
   // inital begin

@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+ `timescale 1ns / 1ps
 `include "defs.svh"
 
 module pipeline_unit (
@@ -6,149 +6,148 @@ module pipeline_unit (
     input rst,
     input [31:0] instr,
     input instr_ready,
-    output read_instr,
-    input [31:0] mem_read_data,
+    input data_ready,
+    output logic read_instr,
+    input [31:0] mem_read_data, io_read,
     output [31:0] mem_write_addr,
     output [31:0] mem_write_data,
     output logic [31:0] pc_addr,
-    output control_signals_t cs_o[N_STAGES-1:0]
+    output logic mem_en, io_en,
+    output data_width dw,
+    output logic mem_rw
 );
-  pipeline_i p (clk);
 
-  assign cs_o = p.cs;
+  pipeline_i p (clk);
+  pl_state_t state;
+
+  wire control_hazard = (p.cs[E].j | (p.cs[E].b & p.branch_hit));
+  wire mem_load_hazard =  (p.cs[E].l && (p.rd[E] == p.rs2[D] | p.rd[E] == p.rs1[D]) && p.rd[E] != 0);
 
   assign p.flushes[F] = 0;
-  assign p.flushes[D] = (p.cs[E].j | (p.cs[E].b & p.branch_hit));
-  assign p.flushes[E] = (p.cs[E].j | (p.cs[E].b & p.branch_hit));
+  assign p.flushes[D] = control_hazard;
+  assign p.flushes[E] = control_hazard;
 
-  assign p.stalls[D] = (p.cs[E].l && (p.rd[E] == p.rs2_in | p.rd[E] == p.rs1_in) && p.rd[E] != 0);
-  assign p.stalls[F] = (p.cs[E].l && (p.rd[E] == p.rs2_in | p.rd[E] == p.rs1_in) && p.rd[E] != 0);
-  assign read_instr = !p.stalls[F];
-  assign p.instr_in = instr;
+  assign p.stalls[PF] = 0; 
 
-  pbuffer #(7, word_t, {
-        {F, W},
-        {D, D},
-        {M, M},
-        {E, E},
-        {E, M},
-        {E, E},
-        {W, W}
-  }) rp ( clk, rst, p.stalls, p.flushes, '{
-        pc_addr,
-        instr,
-        p.alu_res_in,
-        p.r1_in,
-        p.r2_in,
-        p.imm_in,
-        mem_read_data
-    }, '{
-        p.pc,
-        p.instr,
-        p.alu_res,
-        p.r1,
-        p.r2,
-        p.imm,
-        p.mem_read_data
-  });
-  pbuffer #( 3, reg_ind_t, {
-        {E, E},
-        {E, E},
-        {E, M}
-  }) rp1 ( clk, rst, p.stalls, p.flushes, '{
-        p.rs1_in,
-        p.rs2_in,
-        p.rd_in
-      }, '{
-        p.rs1,
-        p.rs2,
-        p.rd
-  });
+  wire mem_wait = !data_ready && (!io_en && p.cs[E].l);
+  assign p.stalls[M] = mem_wait;
+  assign p.stalls[E] = mem_wait;
+  assign p.stalls[D] = mem_wait | mem_load_hazard;
+  assign p.stalls[F] = mem_wait | mem_load_hazard;
 
-  `define SB(x, t, y, z, w) \
-  pbuffer #( 1, t, { \
-    y \
-  }) x ( clk, rst, p.stalls, p.flushes, \
-      '{ z }, \
-      '{ w } \
-  );
-  `SB(rp2, logic[2:0], {E, E}, p.func3_in, p.func3);
-  `SB(rp3, logic[1:0], {E, E}, p.alu_src_sel_in, p.alu_src_sel);
-  `SB(rp4, control_signals_t, {E, W}, p.cs_in, p.cs);
+  logic start = 1;
+  assign read_instr = state == RUNNING & !p.stalls[F];
 
-  wire [31:0] write_back;
+ `define S(start_stage, end_stage, var) \
+  generate \
+    for (genvar i = int'(start_stage) + 1; i <= int'(end_stage); i++) begin : var``_blk \
+      always @(posedge clk, posedge rst) begin \
+        if (rst | p.flushes[i]) begin \
+          p.``var``_in[i] <= 0; \
+        end else if (!p.stalls[i]) begin \
+          p.``var``_in[i] <= (!p.stalls[(i-1)])? p.``var[i-1] : 0; \
+        end \
+      end \
+    end \
+  endgenerate 
+
+  `S(PF, W, pc)
+  `S(F, D, instr)
+  `S(E, W, alu_res)
+  `S(D, E, r1)
+  `S(D, M, r2)
+  `S(D, E, imm)
+  `S(M, W, mem_read_data)  
+  `S(D, E, rs1)
+  `S(D, E, rs2)
+  `S(D, W, rd)
+  `S(D, E, func3)
+  `S(D, E, alu_src_sel)
+  `S(D, W, cs)
+  `S(M, W, write_back)
 
   //Stage 1
 
-  always_latch begin
-    if(instr_ready) begin
-      pc_addr = (p.cs[E].j)? p.alu_res_in: (p.cs[E].b && p.branch_hit)? p.jmp_addr : p.pc[F]+4;
-    end
-  	
+  // initial p.pc_in[F] = -4;
+  assign pc_addr = (p.pc[PF] < 'h1d4)?p.pc[PF]:0;
+  // always @(posedge clk) begin
+  //   pc_addr <= (pc_temp < 'h1d4)? pc_temp : 0;
+  // end
+  // assign pc_addr = (pc_temp < 'h1d4)? pc_temp : 0;
+  always_comb begin
+    case(state) 
+      RESET: p.pc[PF] = 0;
+      RUNNING: begin
+        if(instr_ready) begin
+          p.pc[PF] = (p.cs[E].j)? p.alu_res[E]: (p.cs[E].b && p.branch_hit)? p.jmp_addr : p.pc_in[F]+4;
+        end 
+      end
+    endcase
   end
+  assign p.pc[F] = p.pc_in[F];
+  assign p.instr[F] = instr;
 
   //Stage 2
 
-  ir_dec_ctrl ir_dec (p.ir_dec);
-
-  registers reg_file (
-      .clk(clk),
-      .rst(rst),
-      .w_en(p.cs[M].w),
-      .rs1(p.rs1_in),
-      .rs2(p.rs2_in),
-      .rd(p.rd[M]),
-      .w_data(write_back),
-      .rd_data1(p.r1_temp),
-      .rd_data2(p.r2_temp)
+  ir_dec_ctrl ir_dec (
+    .ir(p.instr_in[D]),
+    .rs1(p.rs1[D]),
+    .rs2(p.rs2[D]),
+    .rd(p.rd[D]),
+    .func3(p.func3[D]),
+    .cs(p.cs[D]),
+    .imm(p.imm[D]),
+    .alu_src_sel(p.alu_src_sel[D])
   );
 
-  // function logic[31:0] reg_mux(logic[31:0] rg, register_data_sel sel);
-  //   case(sel)
-  //     RAW: return rg;
-  //     ALU: return p.alu_res; //TODO Overlapped with reg_e_mux
-  //     default: return write_back; //Imply WB
-  //   endcase
-  // endfunction
+  registers reg_file (
+      .*,
+      .w_en(!p.stalls[M] && p.cs[M].w),
+      .rd(p.rd[M]),
+      .w_data(p.write_back[M]),
+      .rs1(p.rs1[D]),
+      .rs2(p.rs2[D]),
+      .rd_data1(p.r1[D]),
+      .rd_data2(p.r2[D])
+  );
 
-  // assign p.r1_mux = reg_mux(p.r1, p.r1_sel);
-  // assign p.r2_mux = reg_mux(p.r2, p.r2_sel);
+  assign p.pc[D] = p.pc_in[D];
 
   //Stage 3
 
   function logic [31:0] dedm_mux(logic [4:0] rs, logic [31:0] passthrough);
-    return (p.cs[E].w && (rs == p.rd[E]))?
-    p.alu_res_in: (p.cs[M].w && (rs == p.rd[M]))?
-     write_back: passthrough;
+    return (p.cs_in[M].w && (rs == p.rd_in[M]))?
+    p.alu_res_in[M]: (p.cs_in[W].w && (rs == p.rd_in[W]))?
+     p.write_back_in[W]: passthrough;
   endfunction
 
-  assign p.r1_in = dedm_mux(p.rs1_in, p.r1_temp);
-  assign p.r2_in = dedm_mux(p.rs2_in, p.r2_temp);
+  word_t r1_mux, r2_mux;
+  assign r1_mux = dedm_mux(p.rs1_in[E], p.r1_in[E]);
+  assign r2_mux = dedm_mux(p.rs2_in[E], p.r2_in[E]);
 
-  assign p.alu_mux_input_1 = (p.cs_in.ignore_first_operand)? 0: p.alu_src_sel_in[0]? p.pc[D]: p.r1_in;
-  assign p.alu_mux_input_2 = p.alu_src_sel_in[1] ? p.imm_in : p.r2_in;
+  assign p.alu_mux_input_1 = (p.cs_in[E].ignore_first_operand)? 0: p.alu_src_sel_in[E][0]? p.pc_in[E]: r1_mux;
+  assign p.alu_mux_input_2 = p.alu_src_sel_in[E][1] ? p.imm_in[E] : r2_mux;
 
   alu alu_e (
-      .clk(clk),
-      .en(!p.flushes[E]),
-      .func3(p.func3_in),
-      .cs(p.cs_in),
+      .*,
+      .func3(p.func3_in[E]),
+      .cs(p.cs_in[E]),
       .alu_a(p.alu_mux_input_1),
       .alu_b(p.alu_mux_input_2),
       .overflow(p.overflow),
       .zero(p.zero),
-      .alu_result(p.alu_res_in)
+      .alu_result(p.alu_res[E])
   );
 
-  assign p.jmp_addr = p.pc[E] + p.imm[E];
-  assign p.branch_hit = p.cs[E].b & (
-      (p.zero && p.func3[E] == EQ) |
-      (!p.zero && p.func3[E] == NE) |
-      ((p.overflow && p.alu_res_in[31]) && p.func3[E] == LT) | //对于有符号的比较，当p.R1 < p.R2时，OF == SF
-      (!(p.overflow && p.alu_res_in[31]) && p.func3[E] == GE) |
-      ((p.alu_res_in[31]) && p.func3[E] == LTU) |
-      (!(p.alu_res_in[31]) && p.func3[E] == GEU) 
-  );
+  assign p.jmp_addr = p.pc_in[E] + p.imm_in[E];
+  assign p.branch_hit = p.cs_in[E].b & (
+      (p.zero && p.func3_in[E] == EQ) |
+      (!p.zero && p.func3_in[E] == NE) |
+      ((p.overflow && p.alu_res[E][31]) && p.func3_in[E] == LT) | //对于有符号的比较，当p.R1 < p.R2时，OF == SF
+      (!(p.overflow && p.alu_res[E][31]) && p.func3_in[E] == GE) |
+      ((!p.overflow) && p.func3_in[E] == LTU) |
+      (!(p.overflow) && p.func3_in[E] == GEU) 
+  ); //TODO
 
   // multiplier m_e (
   //   .clk_n(clk),
@@ -159,32 +158,82 @@ module pipeline_unit (
   //   .op(mul_op_t'(p.func3[E])),
   //   .rd(p.mul_res)
   // );
+  assign p.pc[E] = p.pc_in[E];
+  assign p.cs[E] = p.cs_in[E];
+  assign p.rd[E] = p.rd_in[E];
+  assign p.r2[E] = p.r2_in[E];
 
   //Stage 4
 
-  // assign cs_oe = p.cs[E];
-  assign mem_write_addr = p.alu_res_in;
+  assign dw = data_width'(p.cs[E].dw);
+  assign mem_rw = p.cs[E].s;
 
-  assign mem_write_data = (p.cs[M].l && (p.rd[M] == p.rs2[E])) ? mem_read_data : p.r2[E];
+  assign mem_en = (!io_en && (p.cs[E].s | p.cs[E].l));
+  assign io_en = (p.alu_res[E] >= IO_START) && (p.cs[E].s | p.cs[E].l);
+  // assign cs_oe = p.cs[E];
+  assign mem_write_addr = p.alu_res[E];
+
+  assign mem_write_data = (p.cs[M].l && (p.rd[M] == p.rs2[E])) ? !io_en? mem_read_data : io_read: p.r2[E];
+
+  assign p.mem_read_data[M] = mem_en? mem_read_data: io_read;
+  // assign p.mem_read_data[M] = mem_read_data;
+  assign p.pc[M] = p.pc_in[M];
+  assign p.cs[M] = p.cs_in[M];
+  assign p.rd[M] = p.rd_in[M];
+  assign p.alu_res[M] = p.alu_res_in[M];
 
   //Stage 5
 
-  assign write_back = (p.cs[M].j | p.cs[M].b) ? p.pc[M] + 4 : p.cs[M].l ? mem_read_data : p.alu_res[M];
+  assign p.write_back[M] = (p.cs[M].j | p.cs[M].b) ? p.pc[M] + 4 : p.cs[M].l ? p.mem_read_data[M] : p.alu_res[M];
 
   //Misc
-
-
-  // hazard hz(p.hazard, instr_ready);
-
   always_comb begin
     if (p.cs[E].j | p.branch_hit) begin
       $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h(b) 0x%0h(j)", $time, p.cs[E].j, p.branch_hit,
-               p.jmp_addr, p.alu_res_in);
+               p.jmp_addr, p.alu_res[E]);
     end
   end
 
-  initial begin
-    $display("type of p.mem_data_read %s", $typename(type(p.func3_in)));
+  logic [5:0] cntr;
+  always @(posedge clk) begin
+    if(cntr == 0 || (p.pc[PF] >= 'h1d4)) begin
+      start <= 0;
+      cntr <= 1;
+    end else if (cntr <= 20) begin
+      cntr <= cntr +  1;
+    end else if (cntr > 20) begin
+      start <= 1;
+    end
   end
+
+  always @(posedge clk) begin
+    if(rst) begin
+      state <= RESET;
+    end else if (start) begin
+      state <= RUNNING;
+    end 
+  end
+
+  initial begin
+    state = RESET;
+    $display("type of p.mem_data_read %s", $typename(type(p.func3[D])));
+    start = 0;
+    // #10 start = 1;
+  end
+
+
+  wire word_t pca, istr, p2;
+  assign pca = pc_addr;
+  assign istr = instr;
+  assign p2 ={31'd0, instr_ready};  
+  
+  // ila_0 debug_probe (
+  // 	.clk(clk), // input wire clk
+
+
+  // 	.probe0(pca), // input wire [31:0]  probe0  
+  // 	.probe1(istr), // input wire [31:0]  probe1 
+  // 	.probe2(p2) // input wire [31:0]  probe2
+  // );
 endmodule
 

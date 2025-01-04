@@ -4,6 +4,7 @@
 `define IR_WIDTH 32
 `define IR_ADDR_WIDTH $clog2(IR_WIDTH)
 
+localparam IO_START = 32'(128 * 1024);  //128*1024
 parameter MEM_ADDR_WIDTH = $clog2(128 * 1024 / 4);
 parameter XLEN = 32;
 
@@ -15,16 +16,16 @@ typedef struct packed {
   logic [32 - 1 :0] immediate;
 } alu_info_t;
 
-parameter N_STAGES = 5;
+parameter N_STAGES = 6; //Including prefetch
 typedef logic [31:0] word_t;
 typedef logic [4:0] reg_ind_t;
 typedef enum logic[2:0]{
-  F = 0,
-  D,
-  E,
-  M,
-  W,
-  IN
+  PF = 0, //Prefetch
+  F = 1 ,
+  D = 2 ,
+  E = 3 ,
+  M = 4 ,
+  W = 5
 } stage_t;
 
 typedef enum logic[2:0]{
@@ -119,18 +120,18 @@ typedef struct packed {
   logic [15:0] leds;
   logic [7:0] JB;
   logic [7:0] JC;
-} gpio;
+} gpio_t;
 
 //Field size is to be multiple of word size
 typedef struct packed {
   logic [3:0][7:0] sseg;
-  gpio gpio;
+  gpio_t gpio;
   uart_w uart;
 } io_registers_w;
 
 typedef struct packed {
   uart_r uart;
-  gpio gpio_b;
+  gpio_t gpio;
 } io_registers_r;
 
 function [31:0] mask(data_width dw);
@@ -190,5 +191,10 @@ typedef union {
   word_t w;
   reg_ind_t r;
 } mixed_t;
+
+typedef enum {
+  RESET,
+  RUNNING
+} pl_state_t;
 
 `endif

@@ -6,6 +6,7 @@ module risc_v (
     input rst,
     output [7:0] JB,
     output [7:0] JC,
+    output logic [7:0] led, 
     input urx,
     output utx
     //io signals
@@ -17,17 +18,20 @@ module risc_v (
 
   wire [31:0] pc_addr;
   wire [31:0] instr;
-  wire instr_ready, read_instr;
+  wire instr_ready, data_ready, read_instr;
   wire [31:0] mem_write_addr;
-  wire [31:0] mem_write_data, mem_read_data;
+  wire [31:0] mem_write_data, mem_read_data, io_read;
+  wire mem_rw;
+  wire data_width dw;
   wire control_signals_t cs_o [N_STAGES-1:0];
   wire [31:0] mem_read_mux;
-  wire mem_en;
+  wire mem_en, io_en;
 
   //io_signals 
 
-  assign io_r.gpio_b.JB = JB;
-  assign io_r.gpio_b.JC = JC;
+  assign io_r.gpio.JB = JB;
+  assign io_r.gpio.JC = JC;
+  assign led = io_w.gpio.leds[7:0];
 
   // gpio_m gpio_rm (
   //     .p1(io_r.gpio_b.JB),
@@ -58,15 +62,15 @@ module risc_v (
   );
 
   pipeline_unit pu1 (
-      .*,
-      .mem_read_data(mem_read_mux)
+      .*
+      // .mem_read_data(mem_read_mux)
   );
 
   mmio mmio1 (
       .*,
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .mem_read_mux(mem_read_mux),
+      // .mem_read_mux(mem_read_mux),
       .mem_read_data(mem_read_data)
   );
 

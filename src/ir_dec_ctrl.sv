@@ -10,7 +10,14 @@
 module ir_dec_ctrl #(
   IR_WIDTH = 32
 )(
-  pipeline_i p
+  input word_t ir,
+  output reg_ind_t rs1,
+  output reg_ind_t rs2,
+  output reg_ind_t rd,
+  output logic[2:0] func3,
+  output control_signals_t cs,
+  output word_t imm,
+  output logic[1:0] alu_src_sel
   // output [6:0] func7
 );
 
@@ -19,9 +26,10 @@ wire [6:0] f7;
 wire [11:0] f12;
 wire [6:0] opcode;
 
-logic [31:0] ir;
+// logic [31:0] ir;
 
-assign ir = p.instr_in;
+// assign ir = p.instr_in;
+// assign ir = p.instr[F];
 
 assign f3 = ir[14:12];
 assign f7 = ir[31:25];
@@ -47,25 +55,32 @@ typedef struct packed {
 
 result_t d_res; // Decode result
 
-always @(posedge p.clk) begin
-  if(!p.stalls[D] && !p.flushes[D]) begin
-    p.rs1_in <= ir[19:15];
-    p.rs2_in <= ir[24:20];
-    p.rd_in <= ir[11:7];
-    p.func3_in <= f3;
-    p.cs_in <= d_res.control_signals;
-    p.imm_in <= d_res.alu_info.immediate;
-    p.alu_src_sel_in <= d_res.alu_info.alu_src_sel;
-  end else if(p.flushes[D]) begin
-    p.rs1_in <= 0;
-    p.rs2_in <= 0;
-    p.rd_in <= 0;
-    p.func3_in <= 0;
-    p.cs_in <= 0;
-    p.imm_in <= 0;
-    p.alu_src_sel_in <= 0;
-  end
-end
+// always @(posedge p.clk) begin
+//   if(!p.stalls[D] && !p.flushes[D]) begin
+//     p.rs1_in <= ir[19:15];
+//     p.rs2_in <= ir[24:20];
+//     p.rd_in <= ir[11:7];
+//     p.func3_in <= f3;
+//     p.cs_in <= d_res.control_signals;
+//     p.imm_in <= d_res.alu_info.immediate;
+//     p.alu_src_sel_in <= d_res.alu_info.alu_src_sel;
+//   end else if(p.flushes[D]) begin
+//     p.rs1_in <= 0;
+//     p.rs2_in <= 0;
+//     p.rd_in <= 0;
+//     p.func3_in <= 0;
+//     p.cs_in <= 0;
+//     p.imm_in <= 0;
+//     p.alu_src_sel_in <= 0;
+//   end
+// end
+assign rs1 = ir[19:15];
+assign rs2 = ir[24:20];
+assign rd = ir[11:7];
+assign func3 = f3;
+assign cs = d_res.control_signals;
+assign imm = d_res.alu_info.immediate;
+assign alu_src_sel = d_res.alu_info.alu_src_sel;
 
 always_comb begin
     // $display("Decoding %h", ir);

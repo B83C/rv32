@@ -11,7 +11,7 @@ module registers (
     output [31:0] rd_data1,
     output [31:0] rd_data2
 );
-  reg [31:0][31:0]regs;
+  logic [31:0][31:0]regs;
 
   //Synched writes
   always @(posedge clk or posedge rst) begin

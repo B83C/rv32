@@ -6,14 +6,13 @@ module dual_port_ram #(
   input ena,
   input [13:0]addra,
   output reg [63:0]douta,
-  output logic readya,
   input clkb /* synthesis syn_isclock = 1 */,
   input enb,
   input renb,
   input [7:0]web,
   input [13:0]addrb,
   input [63:0]dinb,
-  output reg [63:0]doutb
+  output logic [63:0]doutb
 );
 
     // logic [64-1:0] porta_read;
@@ -23,11 +22,9 @@ module dual_port_ram #(
 
     // Port A (32-bit access)
     always @(posedge clka) begin
-        readya <= 0;
         if (ena) begin
-            douta  <= mem[addra];
-            readya <= 1;
-        end
+            douta <= mem[addra];
+        end    
     end
     // Port B (64-bit access)
     always @(posedge clkb) begin
@@ -37,9 +34,9 @@ module dual_port_ram #(
                     mem[addrb][(i*8) +: 8] <= dinb[i * 8 +: 8];
                 end
             end
-            // if (renb) begin
-            doutb <= mem[addrb];
-            // end 
+            if (renb) begin
+                doutb <= mem[addrb];
+            end 
         end
     end
 

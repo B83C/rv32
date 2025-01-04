@@ -15,52 +15,34 @@ module pbuffer #(
 ) (
     input clk,
     input grst,  //global reset
-    input [N_STAGES-1:0]stall, 
-    input [N_STAGES-1:0]flush,
+    input stall[N_STAGES-1:0], 
+    input flush[N_STAGES-1:0],
     input T entries_in[Nitems-1:0],
     output T entries [Nitems-1:0][N_STAGES-1:0]
 );
 
-  generate
-    for (genvar w = 0; w < Nitems; w++) begin : item
-      for (genvar i = int'(meta[w][1]); i <= meta[w][0] && i != int'(IN) && i < N_STAGES; i++) begin : stage
-        always @(posedge clk, posedge grst) begin
-          if (grst | flush[i]) begin
-            entries[w][i] <= 0;
-          end else if (!stall[i]) begin
-            if (i == int'(meta[w][1])) begin
-              entries[w][i] <= (i > 0 && !stall[(i-1)] || i == 0)?entries_in[w]:0;
-            end else begin
-              entries[w][i] <= (i > 0 && !stall[(i-1)])?entries[w][i-1] : 0;
-            end
-          end
-        end
-      end
-    end
-  endgenerate
+  // generate
+  //   for (genvar w = 0; w < Nitems; w++) begin : item
+  //     for (genvar i = int'(meta[w][1]); i <= meta[w][0] && i != int'(IN) && i < N_STAGES; i++) begin : stage
+  //       always @(posedge clk, posedge grst) begin
+  //         if (grst | flush[i]) begin
+  //           entries[w][i] <= 0;
+  //         end else if (!stall[i]) begin
+  //           if (i == int'(meta[w][1])) begin
+  //             entries[w][i] <= (i > 0 && !stall[(i-1)] || i == 0)?entries_in[w]:0;
+  //           end else begin
+  //             entries[w][i] <= (i > 0 && !stall[(i-1)])?entries[w][i-1] : 0;
+  //           end
+  //         end
+  //       end
+  //     end
+  //   end
+  // endgenerate
 
-  typedef struct {
-    stage_t [1:0] meta;
-  } pipeline_t;
+  // typedef struct {
+  //   stage_t [1:0] meta;
+  // } pipeline_t;
 
- `define G(x) \
-  generate \
-    for (genvar w = 0; w < $size(x); w++) begin : gen_slot \
-      for (genvar i = int'(meta[w][1]); i <= meta[w][0] && i != int'(IN) && i < N_STAGES; i++) begin : gen_block \
-        always @(posedge clk, negedge grst) begin \
-          if (!grst | flush[i]) begin \
-            entries[w][i] <= 0; \
-          end else if (!stall[i]) begin \
-            if (i == int'(meta[w][1])) begin \
-              entries[w][i] <= (i > 0 && !stall[(i-1)] || i == 0)?entries_in[w]:0; \
-            end else begin \
-              entries[w][i] <= (i > 0 && !stall[(i-1)])?entries[w][i-1] : 0; \
-            end \
-          end \
-        end \
-      end \
-    end \
-  endgenerate 
 
   // generate
   //   for (w = 0; w < Nitems; w++) begin : gen_slot
