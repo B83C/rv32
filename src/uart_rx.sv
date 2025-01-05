@@ -54,7 +54,7 @@ module uart_rx #(
 
   always @(posedge clk or posedge rst) begin
     if (rst) begin
-      state <= IDLE;
+      state <= DISABLE;
     end else begin
       state <= next_state;
     end
@@ -88,16 +88,16 @@ module uart_rx #(
         else next_state = DISABLE;
       end
       IDLE: begin
-        if (rx == 1'b0)  //ÏÂ½µÑØ¿ªÊ¼Í¨ÐÅ
+        if (rx == 1'b0)  //ï¿½Â½ï¿½ï¿½Ø¿ï¿½Ê¼Í¨ï¿½ï¿½
           next_state = START;
         else next_state = IDLE;
       end
-      START: begin  //¿ªÊ¼½ÓÊÕÊý¾Ý
+      START: begin  //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (cycle_cnt == 8'(CYCLE - 1)) next_state = REC;
         else next_state = START;
       end
       REC: begin
-        if (cycle_cnt == 8'(CYCLE - 1) && bit_cnt == 3'd7)  //Êý¾Ý½ÓÊÕÍê³É
+        if (cycle_cnt == 8'(CYCLE - 1) && bit_cnt == 3'd7)  //ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
           next_state = STOP;
         else next_state = REC;
       end

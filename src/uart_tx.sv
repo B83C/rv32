@@ -108,7 +108,7 @@ module uart_tx#(
        if(rst)
             tx<=1'b1;
         else begin
-            case(state)
+            case(next_state)
                 IDLE: tx<=1'b1;
                 START:tx<=1'b0;
                 SEND:tx<=tx_data_latch[bit_cnt];
@@ -119,11 +119,13 @@ module uart_tx#(
 
     end
 
+    
+
     always@(posedge clk or posedge rst) begin
         if(rst)
             tx_ready <= 1'b0;
         else
-            tx_ready <= (state==IDLE);
+            tx_ready <= (next_state==IDLE);
     end
 
 
