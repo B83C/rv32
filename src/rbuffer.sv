@@ -18,7 +18,7 @@ module rbuffer #(parameter Nbits = 32, parameter RLen= 1)(
   generate
     for(i = RLen - 1; i >= 0; i--) begin
       always @(posedge clk, negedge rst_ng) begin
-        if(!rst_ng | !clr[i]) begin
+        if(!rst_ng | clr[i]) begin
           out[i] <= 0;
         end else if (en[i]) begin
           out[i] <= (i == RLen -1)? in: en[i+1]? out[i+1]:0;

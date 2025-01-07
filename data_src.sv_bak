@@ -1,0 +1,122 @@
+`timescale 1ns / 1ps
+`include "defs.svh"
+
+module data_src (
+    input clk,
+    input rst,
+    input [31:0] pc_addr,
+    input read_instr,
+    output logic [31:0] instr,
+    output logic instr_ready,
+
+    input mem_en,
+    input [31:0] addr,
+    input [31:0] wdata,
+    input mem_rw,
+    data_width dw,
+    output logic data_ready,
+    output logic [31:0] memory
+);
+
+  logic [128-1:0] read_mem;
+  logic [31:0] memory_buffer;
+  logic [7:0] b_en;
+  logic [63:0] wdata_e; 
+  wire [31:0] rdata_e; 
+
+  logic [1:0] instr_sel;
+  data_width dw_c;
+  logic [31:0] addr_c;
+  logic [128-1:0] instr_buffer;
+
+  logic [1:0] readya, readyb;
+  assign instr_ready = readya[0];
+  assign instr = instr_buffer[instr_sel*32 +: 32];
+  // assign data_ready = readyb[1];
+
+  always @(posedge clk) begin
+    {readya[0], readyb[0]} <= 0;
+    readya[1] <= readya[0];
+    readyb[1] <= readyb[0];
+    if(read_instr) begin
+      readya[0] <= 1;
+      instr_sel <= pc_addr[3:2];
+    end
+    if(mem_en && !mem_rw) begin
+      readyb[0] <= 1;
+    end 
+    // if(readyb[0]) begin
+    //   memory <= memory_buffer;
+    // end
+    addr_c <= addr;
+    dw_c <= dw;
+  end
+
+  //Input
+  assign wdata_e = {64'(wdata) << ((addr % 8) * 8)};
+
+  //Output
+  // assign instr = ram_instr[instr_sel*32 +: 32];
+  // assign rdata_e = 32'({read_mem >> ((addr_c[2:0]) * 8)});
+
+  always_comb begin
+    if(mem_rw) begin
+    	b_en = {{4'd0, maskb(dw)} << (addr % 8)};
+    end else begin
+      b_en = 0;
+    end
+    case(dw_c)
+      DB:  memory = {24'd0, cpu_rd_data[8-1:0]};
+      DH:  memory = {16'd0, cpu_rd_data[16-1:0]};
+      DW:  memory = cpu_rd_data[32-1:0];
+    default: begin end
+    endcase
+  end
+  // assign memory = 32'((rdata_e)) & mask(data_width'(cs_o[M].dw)) | {{32{cs_o[M].sign_ex & get_msb(data_width'(cs_o[M].dw), 32'((rdata_e)))}} & ~mask(data_width'(cs_o[M].dw))};
+
+
+  // assign instr_ready = 1;
+  dual_port_ram #(128, 128 * 1024) dpr (
+    .*,
+    .clka(clk) /* synthesis syn_isclock = 1 */,
+    .ena(read_instr),
+    .addra(13'(pc_addr/16)),
+    .douta(instr_buffer),
+
+    .clkb(clk) /* synthesis syn_isclock = 1 */,
+    .enb(mem_req_valid),
+    .renb(!mem_req_wr),
+    .web({8{mem_req_wr}}),
+    .addrb(cpu_req_addr[16:4]),
+    .dinb(mem_wr_data),
+    .doutb(read_mem)
+  );
+
+  logic [16:0] cpu_req_addr = addr[16:0];
+  logic cpu_req_valid = mem_en;
+  logic cpu_req_wr = mem_rw;
+  logic [31:0] cpu_wr_data = wdata;
+  logic [31:0] cpu_rd_data;
+  logic cpu_req_ready;
+  logic [16:0] mem_req_addr;
+  logic mem_req_valid;
+  logic mem_req_wr;
+  logic [127:0] mem_wr_data;
+  logic [127:0] mem_rd_data;
+  logic mem_req_ready;
+  cache dc(.*);
+
+  assign mem_rd_data = read_mem;
+  assign data_ready = cpu_req_ready;
+  assign mem_req_ready = 1;
+
+
+  always @(posedge clk) begin
+    if(readyb[0]) begin
+      $display("[MEM %t] Read %h from %h raw %h", $time(), memory_buffer, addr_c, read_mem);
+    end else if(mem_en && mem_rw) begin
+      $display("[MEM %t] Write %h to %h", $time(), wdata, addr);
+    end
+  end
+
+endmodule
