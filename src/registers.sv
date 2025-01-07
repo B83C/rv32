@@ -2,7 +2,7 @@
 
 module registers (
     input clk,
-    input rst_n,
+    input rst,
     input w_en,
     input [4:0] rs1,
     input [4:0] rs2,
@@ -11,11 +11,11 @@ module registers (
     output [31:0] rd_data1,
     output [31:0] rd_data2
 );
-  reg [31:0][31:0]regs;
+  logic [31:0][31:0]regs;
 
   //Synched writes
-  always @(negedge clk or negedge rst_n) begin
-    if (~rst_n) regs <= 0;
+  always @(posedge clk or posedge rst) begin
+    if (rst) regs <= 0;
     else if (w_en & (rd != 0)) begin
       $display("Writing to register: %h, Data: %h", rd, w_data);
     	regs[rd] <= w_data;

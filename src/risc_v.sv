@@ -2,13 +2,29 @@
 `include "defs.svh"
 
 module risc_v (
-    input clk,
-    input rst_n,
+    input clk_raw,
+    input rst,
     output [7:0] JB,
     output [7:0] JC,
+    output logic [7:0] led, 
     input urx,
     output utx
     //io signals
+);
+
+  
+    logic clk_66;
+    wire clk = clk_66;
+
+  clk_mcmm clk_m
+   (
+    // Clock out ports
+    .clk_66(clk_66),     // output clk_66
+    // Status and control signals
+    .reset(0), // input reset
+    .locked(0),       // output locked
+   // Clock in ports
+    .clk_in1(clk_raw)      // input clk_in1
 );
 
   logic io_rw;
@@ -17,17 +33,20 @@ module risc_v (
 
   wire [31:0] pc_addr;
   wire [31:0] instr;
-  wire instr_ready;
+  wire instr_ready, data_ready, read_instr;
   wire [31:0] mem_write_addr;
-  wire [31:0] mem_write_data, mem_read_data;
-  wire control_signals_t cs_m;
+  wire [31:0] mem_write_data, mem_read_data, io_read;
+  wire mem_rw;
+  wire data_width dw;
+  wire control_signals_t cs_o [N_STAGES-1:0];
   wire [31:0] mem_read_mux;
-  wire mem_en;
+  wire mem_en, io_en;
 
   //io_signals 
 
-  assign io_r.gpio_b.JB = JB;
-  assign io_r.gpio_b.JC = JC;
+  assign io_r.gpio.JB = JB;
+  assign io_r.gpio.JC = JC;
+  assign led = io_w.gpio.leds[7:0];
 
   // gpio_m gpio_rm (
   //     .p1(io_r.gpio_b.JB),
@@ -43,7 +62,7 @@ module risc_v (
       .rx_ctrl(io_w.uart.ctrl[1:0]),
       .rx_ready(io_r.uart.state[1]),
       .clk(clk),
-      .rst(!rst_n)
+      .rst(rst)
   );
 
   uart_tx uart_wm (
@@ -54,45 +73,25 @@ module risc_v (
       .tx_ready(io_r.uart.state[2]),
 
       .clk(clk),
-      .rst(!rst_n)
+      .rst(rst)
   );
 
   pipeline_unit pu1 (
-      .clk(clk),
-      .rst_n(rst_n),
-      .instr(instr),
-      .instr_ready(instr_ready),
-      .pc_addr(pc_addr),
-      .mem_read_data(mem_read_mux),
-      .mem_write_addr(mem_write_addr),
-      .mem_write_data(mem_write_data),
-      .cs_om(cs_m)
+      .*
+      // .mem_read_data(mem_read_mux)
   );
 
   mmio mmio1 (
-      .clk(clk),
+      .*,
       .addr(mem_write_addr),
-      .wdata(mem_write_data),
-      .cs(cs_m),
-      .mem_read_mux(mem_read_mux),
-      .mem_en(mem_en),
-      .mem_read_data(mem_read_data),
-      .io_rw(io_rw),
-      .io_r(io_r),
-      .io_w(io_w)
+      .wdata(mem_write_data)
+      // .mem_read_mux(mem_read_mux),
   );
 
   data_src data_mem (
-      .clk(clk),
-      .pc_addr(pc_addr),
-      .read_instr(1),
-      .instr(instr),
-      .instr_ready(instr_ready),
-
-      .mem_en(mem_en),
+      .*,
       .addr(mem_write_addr),
       .wdata(mem_write_data),
-      .cs(cs_m),
       .memory(mem_read_data)
   );
 endmodule

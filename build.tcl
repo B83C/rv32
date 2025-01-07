@@ -72,7 +72,8 @@ if {![files_changed $source_files $synth_checkpoint]} {
     puts "Source files changed. Synthesizing design..."
 	# generate_target all [get_ips *]
 	# synth_ip [get_ips *] 
-    synth_design -top risc_v -part $partNum -incremental_mode quick
+    synth_design -top risc_v -part $partNum -incremental_mode quick -flatten_hierarchy rebuilt 
+        # -directive AreaOptimized_medium
     write_checkpoint -force $synth_checkpoint
 }
 
@@ -272,7 +273,8 @@ if {![files_changed $source_files $opt_checkpoint]} {
     read_checkpoint -incremental $opt_checkpoint
 } else {
     puts "Optimizing design..."
-    opt_design
+    opt_design -debug_log
+    # opt_design -directive Explore 
 
     write_checkpoint -force $opt_checkpoint
 }
@@ -287,10 +289,10 @@ if {![files_changed $source_files $place_checkpoint]} {
 }
 
 # Check for timing violations
-if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
-    puts "Found setup timing violations => running physical optimization."
-    phys_opt_design
-}
+# if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+#     puts "Found setup timing violations => running physical optimization."
+#     phys_opt_design
+# }
 
 # Read route checkpoint or perform routing if none exists
 if {![files_changed $source_files $route_checkpoint]} {
