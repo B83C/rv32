@@ -82,7 +82,7 @@ module risc_v (
       .io_w(io_w)
   );
 
-  data_src data_mem (
+  data_src data_mem (//instruction memory
       .clk(clk),
       .pc_addr(pc_addr),
       .read_instr(1),
