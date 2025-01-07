@@ -49,6 +49,10 @@ module rx_test(
     );
     localparam period = 100;
 initial fork
+
+    $dumpfile("waveform.fst");
+    $dumpvars(0, tb);
+
     clk = 1;
     rst = 1;
     rx=1;
@@ -156,6 +160,10 @@ initial fork
     end
     
     join    
+
+
+  #4000 $finish();//14000?
+
 
 join
 

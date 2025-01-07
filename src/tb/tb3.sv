@@ -11,24 +11,28 @@ module tb3;
 
   always #1 clk = ~clk;
 
-  logic [XLEN - 1:0] r1, r2;
-  wire logic [XLEN - 1:0] rd;
+  word_t r1, r2;
+  wire word_t rd;
   mul_op_t op;
-  multiplier m(r1, r2, rd, op);
+  logic en, rst;
+  wire mul_busy;
+  multiplier m(.*);
 
   initial begin
+    rst = 0;
+    en = 1;
     $dumpfile("waveform.fst");
     $dumpvars(0, tb);
     r1 = -32'd1024;
     r2 = 32'h01020304;
     op = MUL;
-    #1 op = MULH;
-    #1 op = MULHSU;
-    #1 op = MULHU;
-    #1 op = DIV;
-    #1 op = DIVU;
-    #1 op = REM;
-    #1 op = REMU;
+    #6 op = MULH;
+    #6 op = MULHSU;
+    #6 op = MULHU;
+    #6 op = DIV;
+    #6 op = DIVU;
+    #6 op = REM;
+    #6 op = REMU;
 
     // #2 cs.dw = DW;
    	 #300 $finish();
