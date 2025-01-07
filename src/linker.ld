@@ -2,6 +2,7 @@ MEMORY {
   PROG : ORIGIN = 0x0, LENGTH = 64K
   DATA : ORIGIN = 64K, LENGTH = 32K
   STACK : ORIGIN = 96K, LENGTH = 32K
+  /* BSS : ORIGIN = 128K, LENGTH = 128K */
 }
 
 __stack_size = 32K;

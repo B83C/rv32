@@ -23,7 +23,7 @@ update_ip:
      {{ vivado }} -nolog -nojournal -mode tcl -source  update_ip.tcl 
 
 zig bits="64":
-    zig build
+    zig build --release=fast
     bin2coe -i ./zig-out/bin/rv32_fpga.bin -o ./zig-out/bin/rv32_fpga.mem -w {{ bits }} --mem
     # bin2coe -i ./zig-out/bin/rv32_fpga.bin -o ./zig-out/bin/rv32_fpga.coe -w 8
 

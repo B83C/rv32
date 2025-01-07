@@ -2,7 +2,7 @@
 -- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2024.2 (lin64) Build 5239630 Fri Nov 08 22:34:34 MST 2024
--- Date        : Sat Jan  4 22:54:29 2025
+-- Date        : Mon Jan  6 15:10:32 2025
 -- Host        : t14s running 64-bit Arch Linux
 -- Command     : write_vhdl -force -mode funcsim /home/b83c/fpga/rv32/ips/clk_mcmm/clk_mcmm_sim_netlist.vhdl
 -- Design      : clk_mcmm
@@ -16,15 +16,14 @@ library UNISIM;
 use UNISIM.VCOMPONENTS.ALL;
 entity clk_mcmm_clk_wiz is
   port (
-    clk_66 : out STD_LOGIC;
+    clk_108 : out STD_LOGIC;
     reset : in STD_LOGIC;
-    locked : out STD_LOGIC;
     clk_in1 : in STD_LOGIC
   );
 end clk_mcmm_clk_wiz;
 
 architecture STRUCTURE of clk_mcmm_clk_wiz is
-  signal clk_66_clk_mcmm : STD_LOGIC;
+  signal clk_108_clk_mcmm : STD_LOGIC;
   signal clk_in1_clk_mcmm : STD_LOGIC;
   signal clkfbout_buf_clk_mcmm : STD_LOGIC;
   signal clkfbout_clk_mcmm : STD_LOGIC;
@@ -42,6 +41,7 @@ architecture STRUCTURE of clk_mcmm_clk_wiz is
   signal NLW_mmcm_adv_inst_CLKOUT5_UNCONNECTED : STD_LOGIC;
   signal NLW_mmcm_adv_inst_CLKOUT6_UNCONNECTED : STD_LOGIC;
   signal NLW_mmcm_adv_inst_DRDY_UNCONNECTED : STD_LOGIC;
+  signal NLW_mmcm_adv_inst_LOCKED_UNCONNECTED : STD_LOGIC;
   signal NLW_mmcm_adv_inst_PSDONE_UNCONNECTED : STD_LOGIC;
   signal NLW_mmcm_adv_inst_DO_UNCONNECTED : STD_LOGIC_VECTOR ( 15 downto 0 );
   attribute BOX_TYPE : string;
@@ -71,18 +71,18 @@ clkin1_ibufg: unisim.vcomponents.IBUF
     );
 clkout1_buf: unisim.vcomponents.BUFG
      port map (
-      I => clk_66_clk_mcmm,
-      O => clk_66
+      I => clk_108_clk_mcmm,
+      O => clk_108
     );
 mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
     generic map(
       BANDWIDTH => "OPTIMIZED",
-      CLKFBOUT_MULT_F => 49.500000,
+      CLKFBOUT_MULT_F => 10.125000,
       CLKFBOUT_PHASE => 0.000000,
       CLKFBOUT_USE_FINE_PS => false,
       CLKIN1_PERIOD => 10.000000,
       CLKIN2_PERIOD => 0.000000,
-      CLKOUT0_DIVIDE_F => 15.000000,
+      CLKOUT0_DIVIDE_F => 9.375000,
       CLKOUT0_DUTY_CYCLE => 0.500000,
       CLKOUT0_PHASE => 0.000000,
       CLKOUT0_USE_FINE_PS => false,
@@ -112,7 +112,7 @@ mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
       CLKOUT6_PHASE => 0.000000,
       CLKOUT6_USE_FINE_PS => false,
       COMPENSATION => "ZHOLD",
-      DIVCLK_DIVIDE => 5,
+      DIVCLK_DIVIDE => 1,
       IS_CLKINSEL_INVERTED => '0',
       IS_PSEN_INVERTED => '0',
       IS_PSINCDEC_INVERTED => '0',
@@ -134,7 +134,7 @@ mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
       CLKIN2 => '0',
       CLKINSEL => '1',
       CLKINSTOPPED => NLW_mmcm_adv_inst_CLKINSTOPPED_UNCONNECTED,
-      CLKOUT0 => clk_66_clk_mcmm,
+      CLKOUT0 => clk_108_clk_mcmm,
       CLKOUT0B => NLW_mmcm_adv_inst_CLKOUT0B_UNCONNECTED,
       CLKOUT1 => NLW_mmcm_adv_inst_CLKOUT1_UNCONNECTED,
       CLKOUT1B => NLW_mmcm_adv_inst_CLKOUT1B_UNCONNECTED,
@@ -152,7 +152,7 @@ mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
       DO(15 downto 0) => NLW_mmcm_adv_inst_DO_UNCONNECTED(15 downto 0),
       DRDY => NLW_mmcm_adv_inst_DRDY_UNCONNECTED,
       DWE => '0',
-      LOCKED => locked,
+      LOCKED => NLW_mmcm_adv_inst_LOCKED_UNCONNECTED,
       PSCLK => '0',
       PSDONE => NLW_mmcm_adv_inst_PSDONE_UNCONNECTED,
       PSEN => '0',
@@ -167,9 +167,8 @@ library UNISIM;
 use UNISIM.VCOMPONENTS.ALL;
 entity clk_mcmm is
   port (
-    clk_66 : out STD_LOGIC;
+    clk_108 : out STD_LOGIC;
     reset : in STD_LOGIC;
-    locked : out STD_LOGIC;
     clk_in1 : in STD_LOGIC
   );
   attribute NotValidForBitStream : boolean;
@@ -180,9 +179,8 @@ architecture STRUCTURE of clk_mcmm is
 begin
 inst: entity work.clk_mcmm_clk_wiz
      port map (
-      clk_66 => clk_66,
+      clk_108 => clk_108,
       clk_in1 => clk_in1,
-      locked => locked,
       reset => reset
     );
 end STRUCTURE;

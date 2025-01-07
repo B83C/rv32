@@ -11,11 +11,11 @@ module registers (
     output [31:0] rd_data1,
     output [31:0] rd_data2
 );
-  logic [31:0][31:0]regs;
+  logic [31:0] regs[31:0];
 
   //Synched writes
   always @(posedge clk or posedge rst) begin
-    if (rst) regs <= 0;
+    if (rst) regs <= '{default: 0};
     else if (w_en & (rd != 0)) begin
       $display("Writing to register: %h, Data: %h", rd, w_data);
     	regs[rd] <= w_data;
