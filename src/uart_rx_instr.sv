@@ -33,29 +33,37 @@ module uart_rx #(
   reg [7:0] cycle_cnt;
   reg [2:0] bit_cnt;
 
-  always @(posedge clk or posedge rst) begin
-    if (rst) begin
-      finish_d0 <= 1'b0;
-      finish_d1 <= 1'b0;
-    end else begin
-      finish_d0 <= rx_ctrl[1];
-      finish_d1 <= finish_d0;
-    end
-  end
+  // always @(posedge clk or posedge rst) begin
+  //   if (rst) begin
+  //     finish_d0 <= 1'b0;
+  //     finish_d1 <= 1'b0;
+  //   end else begin
+  //     finish_d0 <= rx_ctrl[1];
+  //     finish_d1 <= finish_d0;
+  //   end
+  // end
+
+  // always @(posedge clk or posedge rst) begin
+  //   if (rst) begin
+  //     receive_d0 <= 1'b0;
+  //     receive_d1 <= 1'b0;
+  //   end else begin
+  //     receive_d0 <= rx_ctrl[0];
+  //     receive_d1 <= receive_d0;
+  //   end
+  // end
+
+  // always @(posedge clk or posedge rst) begin
+  //   if (rst) begin
+  //     state <= DISABLE;
+  //   end else begin
+  //     state <= next_state;
+  //   end
+  // end
 
   always @(posedge clk or posedge rst) begin
     if (rst) begin
-      receive_d0 <= 1'b0;
-      receive_d1 <= 1'b0;
-    end else begin
-      receive_d0 <= rx_ctrl[0];
-      receive_d1 <= receive_d0;
-    end
-  end
-
-  always @(posedge clk or posedge rst) begin
-    if (rst) begin
-      state <= DISABLE;
+      state <= IDLE;
     end else begin
       state <= next_state;
     end
@@ -84,10 +92,10 @@ module uart_rx #(
 
   always @(*) begin
     case (state)
-      DISABLE: begin
-        if (receive_pose) next_state = IDLE;
-        else next_state = DISABLE;
-      end
+      // DISABLE: begin
+      //   if (receive_pose) next_state = IDLE;
+      //   else next_state = DISABLE;
+      // end
       IDLE: begin
         if (rx == 1'b0)  //�½��ؿ�ʼͨ��
           next_state = START;
@@ -107,7 +115,8 @@ module uart_rx #(
         else next_state = STOP;
       end
       DATA: begin
-        if (finish_pose) next_state = DISABLE;
+        //if (finish_pose) next_state = DISABLE;
+        if (finish_pose) next_state = IDLE;
         else next_state = DATA;
       end
       default: next_state = IDLE;

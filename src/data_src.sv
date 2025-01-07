@@ -50,20 +50,20 @@ module data_src (
   // );
 
   // assign instr_ready = 1;
-  dual_port_ram dpr (
-    .clka(clk) /* synthesis syn_isclock = 1 */,
-    .ena(read_instr),
-    .addra(14'(pc_addr/8)),
-    .douta(ram_instr),
-    .readya(instr_ready),
+  // dual_port_ram dpr (
+  //   .clka(clk) /* synthesis syn_isclock = 1 */,
+  //   .ena(read_instr),
+  //   .addra(14'(pc_addr/8)),
+  //   .douta(ram_instr),
+  //   .readya(instr_ready),
 
-    .clkb(clk) /* synthesis syn_isclock = 1 */,
-    .enb(mem_en),
-    .web({8{cs.s}} & b_en),
-    .renb(cs.l),
-    .addrb(14'(addr/8)),
-    .dinb(wdata_e),
-    .doutb(read_mem)
-  );
+  //   .clkb(clk) /* synthesis syn_isclock = 1 */,
+  //   .enb(mem_en),
+  //   .web({8{cs.s}} & b_en),
+  //   .renb(cs.l),
+  //   .addrb(14'(addr/8)),
+  //   .dinb(wdata_e),
+  //   .doutb(read_mem)
+  // );
 
 endmodule
