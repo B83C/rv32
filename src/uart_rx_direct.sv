@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module uart_rx #(
+module uart_rx_direct #(
     CLK_FREQ  = 100_000_000,
     BODE_RATE = 115_200
 ) (
@@ -8,7 +8,7 @@ module uart_rx #(
     output reg [7:0] rx_data,
     input rx,
     //input [1:0] rx_ctrl,
-    output rx_ready,//connect to a led
+    //output rx_ready,//connect to a led
   
     input clk,
     input rst
@@ -19,13 +19,13 @@ module uart_rx #(
   //localparam DISABLE = 0, IDLE = 1, START = 2, REC = 3, STOP = 4, DATA = 5;
   localparam IDLE = 1, START = 2, REC = 3, STOP = 4, DATA = 5;
 
-  reg finish_d0;
-  reg finish_d1;
-  wire finish_pose = finish_d0 & ~finish_d1;
+  // reg finish_d0;
+  // reg finish_d1;
+  // wire finish_pose = finish_d0 & ~finish_d1;
 
-  reg receive_d0;
-  reg receive_d1;
-  wire receive_pose = receive_d0 & ~receive_d1;
+  // reg receive_d0;
+  // reg receive_d1;
+  // wire receive_pose = receive_d0 & ~receive_d1;
 
   reg [2:0] state;
   reg [2:0] next_state;
@@ -107,18 +107,18 @@ module uart_rx #(
       end
       REC: begin
         if (cycle_cnt == 8'(CYCLE - 1) && bit_cnt == 3'd7)  //���ݽ������
-          next_state = STOP;
+          next_state = DATA;
         else next_state = REC;
       end
-      STOP: begin
-        if (cycle_cnt == 8'(CYCLE / 2 - 1)) next_state = DATA;
-        else next_state = STOP;
-      end
       DATA: begin
-        //if (finish_pose) next_state = DISABLE;
-        if (finish_pose) next_state = IDLE;
+        if (cycle_cnt == 8'(CYCLE / 2 - 1)) next_state = IDLE;
         else next_state = DATA;
       end
+      // DATA: begin
+      //   //if (finish_pose) next_state = DISABLE;
+      //   if (finish_pose) next_state = IDLE;
+      //   else next_state = DATA;
+      // end
       default: next_state = IDLE;
     endcase
   end
@@ -136,6 +136,6 @@ module uart_rx #(
     else rx_data_valid <= (next_state == DATA);
   end
 
-  assign rx_ready = (state == IDLE);
+  //assign rx_ready = (state == IDLE);
 
 endmodule

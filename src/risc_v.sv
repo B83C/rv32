@@ -13,8 +13,11 @@ module risc_v #(
     input urx,
     output utx,
     output logic hsync, vsync,
-    output logic [3:0] r, g, b
+    output logic [3:0] r, g, b,
     //io signals
+
+
+    input cpu_or_imem
 );
 
 
@@ -50,6 +53,18 @@ module risc_v #(
   wire [31:0] mem_read_mux;
   wire mem_en, io_en;
   logic [7:0] vga [VCC - 1:0][HCC - 1:0];
+
+  wire [31:0] addr_rx;
+  wire [31:0] instr_data_rx;
+  wire [7:0] data_in_rx;
+  wire rx_data_valid;
+  wire w_ready_rx;
+  wire pos_instr_w;
+  wire neg_instr_w;
+
+
+
+
 
   //io_signals 
 
@@ -100,8 +115,9 @@ module risc_v #(
       .ILA(ILA)
   ) pu1 (
       .*,
-      .data_ready(data_ready | io_read_ready)
+      .data_ready(data_ready | io_read_ready),
       // .mem_read_data(mem_read_mux)
+      .rst(rst|direct_rx)
   );
 
   mmio #(
@@ -114,12 +130,68 @@ module risc_v #(
       // .mem_read_mux(mem_read_mux),
   );
 
+
+
+
+
   data_src data_mem (
       .*,
-      .addr  (mem_write_addr),
-      .wdata (mem_write_data),
+      
+      .mem_en(mem_en|direct_rx),
+      .mem_rw(mem_rw|w_ready_rx),
+
+      .dw(direct_rx?DW:dw),
+      .addr  (direct_rx?addr_rx:mem_write_addr),
+      .wdata (direct_rx?instr_data_rx:mem_write_data),
       .memory(mem_read_data)
   );
+
+
+  debounce#(//消抖加边沿触发
+    .EDGE(1)
+  ) dbp(
+    .edgebut(pos_instr_w),
+    .button(cpu_or_imem),
+    .clk(clk),
+    .rst(rst)
+  );
+  debounce#(
+    .EDGE(0)
+  ) dbn(
+    .edgebut(neg_instr_w),
+    .button(cpu_or_imem),
+    .clk(clk),
+    .rst(rst)
+  );  
+
+
+  instr_w_rx rx_d_crtl(
+    .addr_rx(addr_rx),
+    .instr_data_rx(instr_data_rx),
+    .data_in_rx(data_in_rx),
+    .rx_data_valid(rx_data_valid),
+    .w_ready_rx(w_ready_rx),
+    .direct_rx(direct_rx),
+
+    .pos_instr_w(pos_instr_w),
+    .neg_instr_w(neg_instr_w),
+
+    .clk(clk),
+    .rst(rst)
+  );
+
+  uart_rx_direct urd(
+    .rx_data_valid(rx_data_valid),
+    .rx_data(data_in_rx),
+    .rx(urx),
+    .rst(rst),
+    .clk(clk)
+  );
+
+
+
+
+
 
   generate
     if(ILA) begin
