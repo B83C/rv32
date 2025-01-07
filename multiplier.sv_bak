@@ -1,0 +1,96 @@
+`timescale 1ns/1ps
+`include "defs.svh"
+
+module multiplier(
+  input clk,
+  input rst,
+  input en,
+  input word_t r1, r2,
+  input mul_op_t op,
+  output mul_busy,
+  output word_t rd
+);
+
+  logic running;
+  assign mul_busy = en | running;
+  // logic [2*XLEN - 1:0] full_mul;
+  // logic signed [2*XLEN - 1:0] full_mul_s;
+  // logic signed [2*XLEN - 1:0] full_mul_su;
+  word_t rd_buf;
+
+  dword_t opr_a, opr_b;
+
+  mul_op_t op_c;
+  dword_t o1, o2, res;
+  word_t res1, res2;
+
+  always_comb begin
+    case(op) 
+      MUL, MULH, MULHSU, DIV, REM: opr_a = 64'($signed(r1));
+      MULHU, DIVU, REMU: opr_a = 64'(r1);
+      default: opr_a = 'x;
+    endcase
+
+    case(op) 
+      MUL, MULH, DIV, REM: opr_b = 64'($signed(r2));
+      MULHU, DIVU, MULHSU, REMU: opr_b = 64'(r2);
+      default: opr_b = 'x;
+    endcase
+  end
+
+  always_comb begin
+    if(running) begin
+      case(op_c) 
+        MUL, MULH, MULHSU, MULHU :  res = o1 * o2;
+        DIV, DIVU : res =  32'($signed(o1) / $signed(o2));
+        REM, REMU : res =  32'($signed(o1) % $signed(o2));
+      endcase 
+    end else begin
+      res = 'x;
+    end
+  end
+
+  // assign res =  running && op_c inside {MUL, MULH, MULHSU, MULHU} ? o1 * o2 : 'x;
+  // assign res1 = running && op_c inside {DIV, DIVU} ? 32'($signed(o1) / $signed(o2)) : 'x;
+  // assign res2 = running && op_c inside {REM, REMU} ? 32'($signed(o1) % $signed(o2)) : 'x;
+
+  always @(posedge clk, posedge rst) begin
+    if(rst) begin
+      rd <= 0;
+      o1 <= 0;
+      o2 <= 0;
+      running <= 0;
+    end else begin
+      if(running) begin
+        case(op_c)
+          MUL, DIV, DIVU, REM, REMU: rd <= res[31:0];
+          MULH, MULHSU, MULHU: rd <= res[63:32];
+        endcase 
+        running <= 0;
+      end else if(en) begin
+        running <= 1;
+        o1 <= opr_a;
+        o2 <= opr_b;
+        op_c <= op;
+      end 
+    end
+  end
+
+  // always_comb begin
+  //   if(en) begin
+  //     case(op)
+  //       MUL: rd = full_mul_s[0 +:XLEN];
+  //       MULH: rd = full_mul_s[XLEN  +:XLEN]; 
+  //       MULHSU: rd = full_mul_su[XLEN +: XLEN];
+  //       MULHU: rd = full_mul[XLEN +: XLEN];
+  //       DIV: rd = $signed(r1) / $signed(r2);
+  //       DIVU: rd = r1 / r2;
+  //       REM: rd = $signed(r1) % $signed(r2);
+  //       REMU: rd = r1 % r2;
+  //     endcase
+  //   end else begin
+  //     rd = 0;
+  //   end
+  // end
+
+endmodule

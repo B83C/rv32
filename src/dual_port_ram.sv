@@ -34,14 +34,11 @@ module dual_port_ram #(
     // Port B (64-bit access)
     always @(posedge clkb) begin
         if (enb) begin
-            if (web[0]) begin
-                mem[addrb] <= dinb;
+            for (int i = 0; i < 8; i++) begin
+                if (web[i]) begin
+                    mem[addrb][(i*WIDTH_BYTES) +: WIDTH_BYTES] <= dinb[i * WIDTH_BYTES +: WIDTH_BYTES];
+                end
             end
-            // for (int i = 0; i < 8; i++) begin
-            //     if (web[i]) begin
-            //         mem[addrb][(i*WIDTH_BYTES) +: WIDTH_BYTES] <= dinb[i * WIDTH_BYTES +: WIDTH_BYTES];
-            //     end
-            // end
             if (renb) begin
                 doutb <= mem[addrb];
             end 
