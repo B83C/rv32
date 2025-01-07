@@ -113,7 +113,7 @@ typedef enum logic [1:0] {
 typedef enum logic [1:0] {
   WB_PASSTHROUGH,
   WB_MUL_RES,
-  WB_ALU_RES,
+  WB_M,
   WB_W
 } alu_reg_src_t;
 

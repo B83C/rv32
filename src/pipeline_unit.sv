@@ -37,21 +37,23 @@ module pipeline_unit #(
 
   wire mem_wait = (!data_ready) & (p.mem_en_i[E] & p.cs[E].l) & state == RUNNING;
   wire mem_wait_m = (!data_ready) & (p.mem_en_i_in[M] & (p.cs[M].l)) & state == RUNNING;
-  assign p.stalls[M] = mem_wait_m;
-  assign p.stalls[E] = mem_wait_m;
-  assign p.stalls[D] = p.mul_busy | mem_wait_m | mem_wait | mem_load_hazard;
-  assign p.stalls[F] = p.mul_busy | mem_wait_m | mem_wait | mem_load_hazard;
+
+  always_ff @(posedge clk) begin
+    p.stalls[M] <= mem_wait;
+    p.stalls[E] <= p.cs[E].m | mem_wait;
+    p.stalls[D] <= p.cs[E].m | p.mul_busy | mem_wait | mem_load_hazard;
+    p.stalls[F] <= p.cs[E].m | p.mul_busy | mem_wait | mem_load_hazard;
+  end
 
   `define S(start_stage, end_stage, var) \
   generate \
     for (genvar i = int'(start_stage) + 1; i <= int'(end_stage); i++) begin : var``_blk \
+      assign p.``var``_in[i] = p.stalls[i]?'0:p.``var``_buf[i]; \
       always @(posedge clk, posedge rst) begin \
-        if (rst) begin \
-          p.``var``_in[i] <= '0; \
-        end else if (p.flushes[i]) begin \
-          p.``var``_in[i] <= '0; \
+        if (rst | p.flushes[i]) begin \
+          p.``var``_buf[i] <= '0; \
         end else if (!p.stalls[i]) begin \
-          p.``var``_in[i] <= (!p.stalls[(i-1)])? p.``var[i-1] : '0; \
+          p.``var``_buf[i] <= (!p.stalls[(i-1)])? p.``var[i-1] : '0; \
         end \
       end \
     end \
@@ -100,7 +102,7 @@ module pipeline_unit #(
         next_state = RUNNING;
         read_instr = !p.stalls[F];
         if (instr_ready) begin
-          p.pc[PF] = (p.cs_in[E].b && p.branch_hit) ? p.jmp_addr : p.pc_in[F] + 4;
+          p.pc[PF] = (p.cs_in[E].b && p.branch_hit) ? p.jmp_addr : p.pc_buf[F] + 4;
         end
       end
       default: begin
@@ -145,7 +147,7 @@ module pipeline_unit #(
 
   function alu_reg_src_t src_sel(logic [4:0] rs);
     return (p.cs_in[E].w && (rs == p.rd_in[E]))?
-        p.cs_in[E].m ? WB_MUL_RES: WB_ALU_RES
+        p.cs_in[E].m ? WB_MUL_RES: WB_M
         : (p.cs_in[M].w && (rs == p.rd_in[M]))?
            WB_W: WB_PASSTHROUGH;
   endfunction
@@ -166,16 +168,16 @@ module pipeline_unit #(
 
   function logic [31:0] reg_mux(logic[1:0] src, logic [31:0] passthrough);
     case(alu_reg_src_t'(src)) 
-      WB_MUL_RES:   reg_mux = p.mul_res_in[M];
-      WB_ALU_RES:   reg_mux = p.alu_res_in[M];
+      WB_MUL_RES:   reg_mux = p.mul_res[E];
+      WB_M:   reg_mux = p.write_back[M];
       WB_W:         reg_mux = p.write_back_in[W];
       WB_PASSTHROUGH: reg_mux = passthrough;
     endcase
   endfunction
 
   word_t r1_mux, r2_mux;
-  assign r1_mux = reg_mux(reg_src_1, p.r1_in[E]);
-  assign r2_mux = reg_mux(reg_src_2, p.r2_in[E]);
+  assign r1_mux = reg_mux(p.reg_src_1_in[E], p.r1_in[E]);
+  assign r2_mux = reg_mux(p.reg_src_2_in[E], p.r2_in[E]);
 
   always_comb begin
     case ((p.alu_sel_1_in[E]))
@@ -257,7 +259,8 @@ module pipeline_unit #(
   // assign cs_oe = p.cs[E];
   assign mem_write_addr = p.jmp_addr;
 
-  assign mem_write_data = (p.cs_in[M].l && (p.rd_in[M] == p.rs2_in[E])) ? p.mem_en_i[E]? mem_read_data : io_read: (p.cs[M].w && (p.rd[M] == p.rs2_in[E])) ? p.cs_in[M].m ? p.mul_res_in[M] : p.alu_res_in[M] : r2_mux;
+  assign mem_write_data = r2_mux;
+  // assign mem_write_data = (p.cs_in[M].l && (p.rd_in[M] == p.rs2_in[E])) ? p.mem_en_i[E]? mem_read_data : io_read: (p.cs[M].w && (p.rd[M] == p.rs2_in[E])) ? p.cs_in[M].m ? p.mul_res_in[M] : p.alu_res_in[M] : r2_mux;
 
   assign p.mem_read_data[M] = p.mem_en_i_in[M] ? mem_read_data : p.io_en_i_in[M] ? io_read : 0;
   // assign p.mem_read_data[M] = mem_read_data;
@@ -268,7 +271,7 @@ module pipeline_unit #(
 
   //Stage 5
 
-  assign p.write_back[M] = p.cs[M].l ? p.mem_read_data[M] : p.cs_in[M].m ? p.mul_res[M] : p.alu_res[M];
+  assign p.write_back[M] = p.cs[M].l ? p.mem_read_data[M] : p.cs_in[M].m ? p.mul_res_in[M] : p.alu_res_in[M];
 
   //Misc
   always_comb begin

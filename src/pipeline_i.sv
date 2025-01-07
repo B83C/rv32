@@ -9,7 +9,7 @@ interface pipeline_i(input clk);
   logic flushes [N_STAGES-1:0];
 
  `define D(x, y) \
-    x y [N_STAGES-1:0], y``_in[N_STAGES-1:0];
+    x y [N_STAGES-1:0], y``_in[N_STAGES-1:0], y``_buf[N_STAGES-1:0];
     
   `D(word_t, instr)
   `D(word_t, pc)

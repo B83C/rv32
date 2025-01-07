@@ -11,7 +11,7 @@ module multiplier(
 );
 
   logic running;
-  assign mul_busy = running;
+  assign mul_busy = en | running;
   // logic [2*XLEN - 1:0] full_mul;
   // logic signed [2*XLEN - 1:0] full_mul_s;
   // logic signed [2*XLEN - 1:0] full_mul_su;
