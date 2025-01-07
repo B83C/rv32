@@ -2,33 +2,37 @@
 `include "defs.svh"
 
 module multiplier(
-  input clk_n,
+  input clk,
   input en,
-  input [XLEN - 1:0] r1, r2,
+  input word_t r1, r2,
   input mul_op_t op,
-  // output busy,
-  output reg [XLEN - 1:0] rd
+  output mul_busy,
+  output word_t rd
 );
 
+  logic running;
+  assign mul_busy = running;
   // logic [2*XLEN - 1:0] full_mul;
   // logic signed [2*XLEN - 1:0] full_mul_s;
   // logic signed [2*XLEN - 1:0] full_mul_su;
+  word_t rd_buf;
 
-  always @(negedge clk_n) begin
+  always @(posedge clk) begin
     if(en) begin
+      running <= 1;
       case(op)
-        MUL: rd <= 32'($signed(r1) * $signed(r2));
-        MULH: rd <= ($signed(r1) * $signed(r2)) >> 32; 
-        MULHSU: rd <= ($signed(r1) * r2) >> 32;
-        MULHU: rd <= (r1 * r2) >> 32;
-        DIV: rd <= $signed(r1) / $signed(r2);
-        DIVU: rd <= r1 / r2;
-        REM: rd <= $signed(r1) % $signed(r2);
-        REMU: rd <= r1 % r2;
+        MUL: rd_buf <= 32'($signed(r1) * $signed(r2));
+        MULH: rd_buf <= 32'((64'($signed(r1)) * 64'($signed(r2))) >> 32); 
+        MULHSU: rd_buf <= 32'((64'($signed(r1)) * 64'(r2)) >> 32); 
+        MULHU: rd_buf <= 32'((64'(r1) * 64'(r2)) >> 32); 
+        DIV: rd_buf <= $signed(r1) / $signed(r2);
+        DIVU: rd_buf <= r1 / r2;
+        REM: rd_buf <= $signed(r1) % $signed(r2);
+        REMU: rd_buf <= r1 % r2;
       endcase 
-      // full_mul <= r1 * r2;
-      // full_mul_s <= $signed(r1) * $signed(r2);
-      // full_mul_su <= $signed(r1) * r2;
+    end else if (running) begin
+      running <= 0;
+      rd <= rd_buf;
     end
   end
 

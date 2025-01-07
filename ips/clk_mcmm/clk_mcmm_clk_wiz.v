@@ -53,7 +53,7 @@
 //  Output     Output      Phase    Duty Cycle   Pk-to-Pk     Phase
 //   Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
 //----------------------------------------------------------------------------
-// __clk_66__66.00000______0.000______50.0______258.798____296.868
+// _clk_108__108.00000______0.000______50.0______127.691_____97.646
 //
 //----------------------------------------------------------------------------
 // Input Clock   Freq (MHz)    Input Jitter (UI)
@@ -66,10 +66,9 @@ module clk_mcmm_clk_wiz
 
  (// Clock in ports
   // Clock out ports
-  output        clk_66,
+  output        clk_108,
   // Status and control signals
   input         reset,
-  output        locked,
   input         clk_in1
  );
   // Input buffering
@@ -90,7 +89,7 @@ wire clk_in2_clk_mcmm;
   //    * Unused inputs are tied off
   //    * Unused outputs are labeled unused
 
-  wire        clk_66_clk_mcmm;
+  wire        clk_108_clk_mcmm;
   wire        clk_200_clk_mcmm;
   wire        clk_80_clk_mcmm;
   wire        clk_out4_clk_mcmm;
@@ -124,11 +123,11 @@ wire clk_in2_clk_mcmm;
     .CLKOUT4_CASCADE      ("FALSE"),
     .COMPENSATION         ("ZHOLD"),
     .STARTUP_WAIT         ("FALSE"),
-    .DIVCLK_DIVIDE        (5),
-    .CLKFBOUT_MULT_F      (49.500),
+    .DIVCLK_DIVIDE        (1),
+    .CLKFBOUT_MULT_F      (10.125),
     .CLKFBOUT_PHASE       (0.000),
     .CLKFBOUT_USE_FINE_PS ("FALSE"),
-    .CLKOUT0_DIVIDE_F     (15.000),
+    .CLKOUT0_DIVIDE_F     (9.375),
     .CLKOUT0_PHASE        (0.000),
     .CLKOUT0_DUTY_CYCLE   (0.500),
     .CLKOUT0_USE_FINE_PS  ("FALSE"),
@@ -138,7 +137,7 @@ wire clk_in2_clk_mcmm;
    (
     .CLKFBOUT            (clkfbout_clk_mcmm),
     .CLKFBOUTB           (clkfboutb_unused),
-    .CLKOUT0             (clk_66_clk_mcmm),
+    .CLKOUT0             (clk_108_clk_mcmm),
     .CLKOUT0B            (clkout0b_unused),
     .CLKOUT1             (clkout1_unused),
     .CLKOUT1B            (clkout1b_unused),
@@ -176,7 +175,6 @@ wire clk_in2_clk_mcmm;
     .RST                 (reset_high));
   assign reset_high = reset; 
 
-  assign locked = locked_int;
 // Clock Monitor clock assigning
 //--------------------------------------
  // Output buffering
@@ -192,8 +190,8 @@ wire clk_in2_clk_mcmm;
 
 
   BUFG clkout1_buf
-   (.O   (clk_66),
-    .I   (clk_66_clk_mcmm));
+   (.O   (clk_108),
+    .I   (clk_108_clk_mcmm));
 
 
 

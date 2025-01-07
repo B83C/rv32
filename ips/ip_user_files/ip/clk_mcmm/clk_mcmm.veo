@@ -52,7 +52,7 @@
 //  Output     Output      Phase    Duty Cycle   Pk-to-Pk     Phase
 //   Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
 //----------------------------------------------------------------------------
-// __clk_66__66.00000______0.000______50.0______258.798____296.868
+// _clk_108__108.00000______0.000______50.0______127.691_____97.646
 //
 //----------------------------------------------------------------------------
 // Input Clock   Freq (MHz)    Input Jitter (UI)
@@ -68,10 +68,9 @@
   clk_mcmm instance_name
    (
     // Clock out ports
-    .clk_66(clk_66),     // output clk_66
+    .clk_108(clk_108),     // output clk_108
     // Status and control signals
     .reset(reset), // input reset
-    .locked(locked),       // output locked
    // Clock in ports
     .clk_in1(clk_in1)      // input clk_in1
 );

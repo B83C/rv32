@@ -1,52 +1,57 @@
- `timescale 1ns / 1ps
+`timescale 1ns / 1ps
 `include "defs.svh"
 
-module pipeline_unit (
+module pipeline_unit #(
+    VIRT = 0, 
+    ILA = 0
+) (
     input clk,
     input rst,
     input [31:0] instr,
     input instr_ready,
     input data_ready,
     output logic read_instr,
-    input [31:0] mem_read_data, io_read,
+    sign_ex,
+    input [31:0] mem_read_data,
+    io_read,
     output [31:0] mem_write_addr,
     output [31:0] mem_write_data,
     output logic [31:0] pc_addr,
-    output logic mem_en, io_en,
+    output logic mem_en,
+    io_en,
     output data_width dw,
     output logic mem_rw
 );
 
   pipeline_i p (clk);
-  pl_state_t state;
+  pl_state_t state, next_state;
 
-  wire control_hazard = (p.cs[E].j | (p.cs[E].b & p.branch_hit));
-  wire mem_load_hazard =  (p.cs[E].l && (p.rd[E] == p.rs2[D] | p.rd[E] == p.rs1[D]) && p.rd[E] != 0);
+  wire control_hazard = (p.cs[E].b & p.branch_hit);
+  wire mem_load_hazard = (p.cs[E].l && (p.rd[E] == p.rs2[D] | p.rd[E] == p.rs1[D]) && p.rd[E] != 0);
 
-  assign p.flushes[F] = 0;
-  assign p.flushes[D] = control_hazard;
-  assign p.flushes[E] = control_hazard;
+  assign p.flushes[F] = state != RUNNING | 0;
+  assign p.flushes[D] = state != RUNNING | control_hazard;
+  assign p.flushes[E] = state != RUNNING | control_hazard;
 
-  assign p.stalls[PF] = 0; 
+  assign p.stalls[PF] = 0;
 
-  wire mem_wait = !data_ready && (!p.io_en_i[E] && p.cs[E].l);
-  wire mem_wait_m = !data_ready && (!p.io_en_i_in[M] && (p.cs[M].l));
+  wire mem_wait = (!data_ready) & (p.mem_en_i[E] & p.cs[E].l) & state == RUNNING;
+  wire mem_wait_m = (!data_ready) & (p.mem_en_i_in[M] & (p.cs[M].l)) & state == RUNNING;
   assign p.stalls[M] = mem_wait_m;
   assign p.stalls[E] = mem_wait_m;
-  assign p.stalls[D] = mem_wait_m | mem_wait | mem_load_hazard;
-  assign p.stalls[F] = mem_wait_m | mem_wait | mem_load_hazard;
+  assign p.stalls[D] = p.mul_busy | mem_wait_m | mem_wait | mem_load_hazard;
+  assign p.stalls[F] = p.mul_busy | mem_wait_m | mem_wait | mem_load_hazard;
 
-  logic start = 1;
-  assign read_instr = state == RUNNING & !p.stalls[F];
-
- `define S(start_stage, end_stage, var) \
+  `define S(start_stage, end_stage, var) \
   generate \
     for (genvar i = int'(start_stage) + 1; i <= int'(end_stage); i++) begin : var``_blk \
       always @(posedge clk, posedge rst) begin \
-        if (rst | p.flushes[i]) begin \
-          p.``var``_in[i] <= 0; \
+        if (rst) begin \
+          p.``var``_in[i] <= '0; \
+        end else if (p.flushes[i]) begin \
+          p.``var``_in[i] <= '0; \
         end else if (!p.stalls[i]) begin \
-          p.``var``_in[i] <= (!p.stalls[(i-1)])? p.``var[i-1] : 0; \
+          p.``var``_in[i] <= (!p.stalls[(i-1)])? p.``var[i-1] : '0; \
         end \
       end \
     end \
@@ -55,15 +60,22 @@ module pipeline_unit (
   `S(PF, W, pc)
   `S(F, D, instr)
   `S(E, W, alu_res)
+  `S(E, W, mul_res)
   `S(D, E, r1)
   `S(D, M, r2)
   `S(D, E, imm)
-  `S(M, W, mem_read_data)  
+  `S(M, W, mem_read_data)
   `S(D, E, rs1)
   `S(D, E, rs2)
   `S(D, W, rd)
+  `S(D, E, alu_op)
   `S(D, E, func3)
-  `S(D, E, alu_src_sel)
+  `S(D, E, op)
+  `S(D, E, reg_src_1)
+  `S(D, E, reg_src_2)
+  `S(D, E, agu_sel)
+  `S(D, E, alu_sel_1)
+  `S(D, E, alu_sel_2)
   `S(D, W, cs)
   `S(M, W, write_back)
   `S(E, M, io_en_i)
@@ -71,36 +83,50 @@ module pipeline_unit (
 
   //Stage 1
 
-  // initial p.pc_in[F] = -4;
   assign pc_addr = p.pc[PF];
-  // always @(posedge clk) begin
-  //   pc_addr <= (pc_temp < 'h1d4)? pc_temp : 0;
-  // end
-  // assign pc_addr = (pc_temp < 'h1d4)? pc_temp : 0;
+
   always_comb begin
-    case(state) 
-      RESET: p.pc[PF] = 0;
+    case (state)
+      RESET: begin
+        p.pc[PF]   = 0;  //Reset PC ADDR
+        next_state = WAIT;
+        read_instr = 0;
+      end
+      WAIT: begin
+        next_state = RUNNING;
+        read_instr = 1;
+      end
       RUNNING: begin
-        if(instr_ready) begin
-          p.pc[PF] = (p.cs[E].j)? p.alu_res[E]: (p.cs[E].b && p.branch_hit)? p.jmp_addr : p.pc_in[F]+4;
-        end 
+        next_state = RUNNING;
+        read_instr = !p.stalls[F];
+        if (instr_ready) begin
+          p.pc[PF] = (p.cs_in[E].b && p.branch_hit) ? p.jmp_addr : p.pc_in[F] + 4;
+        end
+      end
+      default: begin
+        next_state = RESET;
       end
     endcase
   end
+
   assign p.pc[F] = p.pc_in[F];
-  assign p.instr[F] = instr;
+  assign p.instr[F] = (state != RUNNING & !instr_ready) ? 0 : instr;
 
   //Stage 2
 
   ir_dec_ctrl ir_dec (
-    .ir(p.instr_in[D]),
-    .rs1(p.rs1[D]),
-    .rs2(p.rs2[D]),
-    .rd(p.rd[D]),
-    .func3(p.func3[D]),
-    .cs(p.cs[D]),
-    .imm(p.imm[D]),
-    .alu_src_sel(p.alu_src_sel[D])
+      .ir(p.instr_in[D]),
+      .rs1(p.rs1[D]),
+      .rs2(p.rs2[D]),
+      .rd(p.rd[D]),
+      .alu_op(p.alu_op[D]),
+      .func3(p.func3[D]),
+      .op(p.op[D]),
+      .cs(p.cs[D]),
+      .imm(p.imm[D]),
+      .agu_sel(p.agu_sel[D]),
+      .alu_sel_1(p.alu_sel_1[D]),
+      .alu_sel_2(p.alu_sel_2[D])
   );
 
   registers reg_file (
@@ -115,25 +141,61 @@ module pipeline_unit (
   );
 
   assign p.pc[D] = p.pc_in[D];
+  assign p.instr[D] = p.instr_in[D];
+
+  function alu_reg_src_t src_sel(logic [4:0] rs);
+    return (p.cs_in[E].w && (rs == p.rd_in[E]))?
+        p.cs_in[E].m ? WB_MUL_RES: WB_ALU_RES
+        : (p.cs_in[M].w && (rs == p.rd_in[M]))?
+           WB_W: WB_PASSTHROUGH;
+  endfunction
+
+  alu_reg_src_t reg_src_1;
+  alu_reg_src_t reg_src_2;
+  assign p.reg_src_1[D] = src_sel(p.rs1[D]);
+  assign p.reg_src_2[D] = src_sel(p.rs2[D]);
 
   //Stage 3
 
-  function logic [31:0] dedm_mux(logic [4:0] rs, logic [31:0] passthrough);
-    return (p.cs_in[M].w && (rs == p.rd_in[M]))?
-    p.alu_res_in[M]: (p.cs_in[W].w && (rs == p.rd_in[W]))?
-     p.write_back_in[W]: passthrough;
+  always @(posedge clk) begin
+    if(!p.stalls[D]) begin
+      reg_src_1 <= src_sel(p.rs1[D]);
+      reg_src_2 <= src_sel(p.rs2[D]);
+    end
+  end
+
+  function logic [31:0] reg_mux(logic[1:0] src, logic [31:0] passthrough);
+    case(alu_reg_src_t'(src)) 
+      WB_MUL_RES:   reg_mux = p.mul_res_in[M];
+      WB_ALU_RES:   reg_mux = p.alu_res_in[M];
+      WB_W:         reg_mux = p.write_back_in[W];
+      WB_PASSTHROUGH: reg_mux = passthrough;
+    endcase
   endfunction
 
   word_t r1_mux, r2_mux;
-  assign r1_mux = dedm_mux(p.rs1_in[E], p.r1_in[E]);
-  assign r2_mux = dedm_mux(p.rs2_in[E], p.r2_in[E]);
+  assign r1_mux = reg_mux(reg_src_1, p.r1_in[E]);
+  assign r2_mux = reg_mux(reg_src_2, p.r2_in[E]);
 
-  assign p.alu_mux_input_1 = (p.cs_in[E].ignore_first_operand)? 0: p.alu_src_sel_in[E][0]? p.pc_in[E]: r1_mux;
-  assign p.alu_mux_input_2 = p.alu_src_sel_in[E][1] ? p.imm_in[E] : r2_mux;
+  always_comb begin
+    case ((p.alu_sel_1_in[E]))
+      ALU_S1_0:  p.alu_mux_input_1 = 0;
+      ALU_S1_PC: p.alu_mux_input_1 = p.pc_in[E];
+      ALU_S1_R1: p.alu_mux_input_1 = r1_mux;
+      default:   p.alu_mux_input_1 = 'x;
+    endcase
+
+    case (p.alu_sel_2_in[E])
+      ALU_S2_4: p.alu_mux_input_2 = 4;
+      ALU_S2_IMM: p.alu_mux_input_2 = p.imm_in[E];
+      ALU_S2_R2: p.alu_mux_input_2 = r2_mux;
+      default: p.alu_mux_input_2 = 'x;
+    endcase
+  end
 
   alu alu_e (
       .*,
-      .func3(p.func3_in[E]),
+      .alu_op(p.alu_op_in[E]),
       .cs(p.cs_in[E]),
       .alu_a(p.alu_mux_input_1),
       .alu_b(p.alu_mux_input_2),
@@ -142,25 +204,41 @@ module pipeline_unit (
       .alu_result(p.alu_res[E])
   );
 
-  assign p.jmp_addr = p.pc_in[E] + p.imm_in[E];
-  assign p.branch_hit = p.cs_in[E].b & (
-      (p.zero && p.func3_in[E] == EQ) |
-      (!p.zero && p.func3_in[E] == NE) |
-      ((p.overflow && p.alu_res[E][31]) && p.func3_in[E] == LT) | //对于有符号的比较，当p.R1 < p.R2时，OF == SF
-      (!(p.overflow && p.alu_res[E][31]) && p.func3_in[E] == GE) |
-      ((p.alu_res[E][31]) && p.func3_in[E] == LTU) |
-      (!(p.alu_res[E][31]) && p.func3_in[E] == GEU) 
-  ); //TODO LTU for 32bit integer might not work
+  word_t agu_s1;
+  always_comb begin
+    case (p.agu_sel_in[E])
+      AGU_S1_R1: agu_s1 = r1_mux;
+      AGU_S1_PC: agu_s1 = p.pc_in[E];
+    endcase
+  end
 
-  // multiplier m_e (
-  //   .clk_n(clk),
-  //   .en(p.cs[E].m),
-  //   .r1(p.r1[E]),
-  //   // .busy(m_busy),
-  //   .r2(p.r2[E]),
-  //   .op(mul_op_t'(p.func3[E])),
-  //   .rd(p.mul_res)
-  // );
+  assign p.jmp_addr = agu_s1 + p.imm_in[E];
+
+  always_comb begin
+    if (p.op_in[E][2]) begin
+      p.branch_hit = 1;
+    end else begin
+      case (p.func3_in[E])
+        EQ: p.branch_hit = p.zero;
+        NE: p.branch_hit = !p.zero;
+        LT, LTU: p.branch_hit = p.overflow;
+        GE, GEU: p.branch_hit = !p.overflow;
+        default: p.branch_hit = 'x;
+      endcase
+    end
+  end
+
+  multiplier m_e (
+      .*,
+      .clk(p.clk),
+      .en(p.cs_in[E].m),
+      .r1(r1_mux),
+      .r2(r2_mux),
+      .mul_busy(p.mul_busy),
+      .op(mul_op_t'(p.func3[E])),
+      .rd(p.mul_res[E])
+  );
+
   assign p.pc[E] = p.pc_in[E];
   assign p.cs[E] = p.cs_in[E];
   assign p.rd[E] = p.rd_in[E];
@@ -168,19 +246,20 @@ module pipeline_unit (
 
   //Stage 4
 
+  assign sign_ex = p.cs[E].sign_ex;
   assign dw = data_width'(p.cs[E].dw);
   assign mem_rw = p.cs[E].s;
 
   assign io_en = p.io_en_i[E];
   assign mem_en = p.mem_en_i[E];
-  assign p.mem_en_i[E] = (!p.io_en_i[E] && (p.cs[E].s | p.cs[E].l));
-  assign p.io_en_i[E] = (p.alu_res[E] >= IO_START) && (p.cs[E].s | p.cs[E].l);
+  assign p.mem_en_i[E] = (p.jmp_addr < IO_START && (p.cs_in[E].s | p.cs_in[E].l));
+  assign p.io_en_i[E] = (p.jmp_addr >= IO_START) && (p.cs_in[E].s | p.cs_in[E].l);
   // assign cs_oe = p.cs[E];
-  assign mem_write_addr = p.alu_res[E];
+  assign mem_write_addr = p.jmp_addr;
 
-  assign mem_write_data = (p.cs[M].l && (p.rd[M] == p.rs2_in[E])) ? !p.io_en_i[E]? mem_read_data : io_read: (p.cs[M].w && (p.rd[M] == p.rs2_in[E])) ? p.alu_res[M] : p.r2[E];
+  assign mem_write_data = (p.cs_in[M].l && (p.rd_in[M] == p.rs2_in[E])) ? p.mem_en_i[E]? mem_read_data : io_read: (p.cs[M].w && (p.rd[M] == p.rs2_in[E])) ? p.cs_in[M].m ? p.mul_res_in[M] : p.alu_res_in[M] : r2_mux;
 
-  assign p.mem_read_data[M] = p.mem_en_i_in[M]? mem_read_data: p.io_en_i_in[M]? io_read: 0;
+  assign p.mem_read_data[M] = p.mem_en_i_in[M] ? mem_read_data : p.io_en_i_in[M] ? io_read : 0;
   // assign p.mem_read_data[M] = mem_read_data;
   assign p.pc[M] = p.pc_in[M];
   assign p.cs[M] = p.cs_in[M];
@@ -189,59 +268,61 @@ module pipeline_unit (
 
   //Stage 5
 
-  assign p.write_back[M] = (p.cs[M].j | p.cs[M].b) ? p.pc[M] + 4 : p.cs[M].l ? p.mem_read_data[M] : p.alu_res[M];
+  assign p.write_back[M] = p.cs[M].l ? p.mem_read_data[M] : p.cs_in[M].m ? p.mul_res[M] : p.alu_res[M];
 
   //Misc
   always_comb begin
-    if (p.cs[E].j | p.branch_hit) begin
-      $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h(b) 0x%0h(j)", $time, p.cs[E].j, p.branch_hit,
-               p.jmp_addr, p.alu_res[E]);
+    if (p.cs[E].b) begin
+      $display("[time=%0t j=0x%0h b=0x%0h addr=0x%0h", $time, p.op_in[E][2],
+               !p.op_in[E][2] & p.branch_hit, p.jmp_addr);
     end
   end
 
-  logic [5:0] cntr;
-  always @(posedge clk) begin
-    if(cntr == 0 || (p.pc[PF] >= 'h1d4)) begin
-      start <= 0;
-      cntr <= 1;
-    end else if (cntr <= 20) begin
-      cntr <= cntr +  1;
-    end else if (cntr > 20) begin
-      start <= 1;
-    end
-  end
-
-  always @(posedge clk) begin
-    if(rst) begin
+  always @(posedge clk, posedge rst) begin
+    if (rst) begin
       state <= RESET;
-    end else if (start) begin
-      state <= RUNNING;
-    end 
+    end else begin
+      state <= next_state;
+    end
   end
 
   initial begin
     state = RESET;
-    start = 1;
-    // #10 start = 1;
   end
 
+  generate
+    if (ILA) begin
+      wire word_t pca, istr, p2;
+      wire word_t p3, p4;
+      assign pca = pc_addr;
 
-  wire word_t pca, istr, p2;
-  wire word_t p3, p4;
-  assign pca = pc_addr;
-  assign istr = instr;
-  assign p2 ={rst, p.cs[D], instr_ready};  
-  assign p3 = p.imm[D];
-  assign p4 = {<<{p.stalls}};
-  
-  ila_0 debug_probe (
-  	.clk(clk), // input wire clk
-    .trig_in(pca == 0),
-  	.probe0(pca), // input wire [31:0]  probe0  
-  	.probe1(istr), // input wire [31:0]  probe1 
-  	.probe2(p2), // input wire [31:0]  probe2
-    .probe3(p3),
-    .probe4(p4)
-  );
+      wire reset = rst;
+      wire mwait = mem_wait;
+      wire mwait_m = mem_wait_m;
+      wire c_haz = control_hazard;
+      wire l_haz = mem_load_hazard;
+      wire mem_en = p.mem_en_i[E];
+      wire control_signals_t cs1, cs2;
+
+      assign cs1 = p.cs[D];
+      assign cs2 = p.cs_in[E];
+
+      ila_0 debug_probe (
+          .clk(clk),  // input wire clk
+          .trig_in(pca == 0),
+          .probe0(pc_addr),  // input wire [31:0]  probe0  
+          .probe1(p.instr_in[D]),  // input wire [31:0]  probe1 
+          .probe2({cs1, p.rs1[D], p.rs2[D], p.rd[D], p.func3[D]}),  // input wire [31:0]  probe2
+          .probe3(p.alu_mux_input_2),
+          .probe4(mem_write_data),
+          .probe5({
+            instr_ready, read_instr, reset, state, c_haz, l_haz, mwait, mwait_m, mem_en, cs2
+          }),
+          .probe6(p.alu_mux_input_1),
+          .probe7(p.alu_res[E])
+      );
+    end
+  endgenerate
+
 endmodule
 

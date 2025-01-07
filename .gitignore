@@ -10,3 +10,7 @@ zig-out/
 zig-out/*
 .vscode/
 .vscode/*
+ips/managed_ip_project/
+ips/managed_ip_project/*
+ips/ip_user_files/
+ips/ip_user_files/*

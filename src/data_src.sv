@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `include "defs.svh"
 
-module data_src (
+module data_src #(DEBUG = 1)(
     input clk,
     input [31:0] pc_addr,
     input read_instr,
@@ -12,6 +12,7 @@ module data_src (
     input [31:0] addr,
     input [31:0] wdata,
     input mem_rw,
+    input sign_ex,
     data_width dw,
     output logic data_ready,
     output logic [31:0] memory
@@ -23,7 +24,7 @@ module data_src (
   logic [63:0] wdata_e; 
   wire [31:0] rdata_e; 
 
-  logic instr_sel;
+  logic instr_sel, sign_ex_c;
   data_width dw_c;
   logic [31:0] addr_c;
   logic [63:0] instr_buffer;
@@ -48,6 +49,7 @@ module data_src (
       memory <= memory_buffer;
     end
     addr_c <= addr;
+    sign_ex_c <= sign_ex;
     dw_c <= dw;
   end
 
@@ -65,29 +67,12 @@ module data_src (
       b_en = 0;
     end
     case(dw_c)
-      DB:  memory_buffer = {24'd0, rdata_e[8-1:0]};
-      DH:  memory_buffer = {16'd0, rdata_e[16-1:0]};
+      DB:  memory_buffer = 32'(signed'({sign_ex_c & rdata_e[8-1], rdata_e[8-1:0]}));
+      DH:  memory_buffer = 32'(signed'({sign_ex_c & rdata_e[16-1], rdata_e[16-1:0]}));
       DW:  memory_buffer = rdata_e[32-1:0];
-    default: begin end
+    default: memory_buffer = 'x;
     endcase
   end
-  // assign memory = 32'((rdata_e)) & mask(data_width'(cs_o[M].dw)) | {{32{cs_o[M].sign_ex & get_msb(data_width'(cs_o[M].dw), 32'((rdata_e)))}} & ~mask(data_width'(cs_o[M].dw))};
-
-  // ram dpr(
-  //   .clka(~clk) /* synthesis syn_isclock = 1 */,
-  //   .ena(1),
-  //   .wea(0),
-  //   .addra(pc_addr/4),
-  //   .dina(0),
-  //   .douta(instr),
-
-  //   .clkb(~clk) /* synthesis syn_isclock = 1 */,
-  //   .enb(mem_en),
-  //   .web({15{cs_o[E].s}} & b_en),
-  //   .addrb(addr),
-  //   .dinb(wdata_e),
-  //   .doutb(read_mem)
-  // );
 
   // assign instr_ready = 1;
   dual_port_ram dpr (
